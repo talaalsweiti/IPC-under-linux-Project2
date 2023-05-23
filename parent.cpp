@@ -2,6 +2,8 @@
 using namespace std;
 
 void readFile();
+pid_t createProcesses(char *);
+void sendColumnToChildren();
 
 vector<vector<string>> tokens;
 int maxColumns = 0;
@@ -12,6 +14,7 @@ MESSAGE msg;
 int main(int argc, char *argv[])
 {
     readFile();
+    sendColumnToChildren();
     return 0;
 }
 
@@ -53,7 +56,7 @@ void readFile()
     }
     for (unsigned i = 0; i < tokens.size(); i++)
     {
-        while (tokens[i].size() < maxColumns)
+        while ((int)tokens[i].size() < maxColumns)
         {
             tokens[i].push_back("alright");
         }
@@ -64,7 +67,10 @@ void readFile()
     //     for (int j = 0; j < data.size(); j++) {
     //         columns[i][j] = tokens[j][i];
     //     }
+}
 
+void sendColumnToChildren()
+{
     if ((key = ftok(".", SEED)) == -1)
     {
         perror("Parent: key generation");
@@ -72,7 +78,7 @@ void readFile()
     }
     // cout << "PARENT: " << key << endl;
 
-    if (mid = msgget(key, IPC_CREAT | 0660) == -1)
+    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // check for IPC_CREAT flag
     {
         perror("Queue creation");
         exit(4);
@@ -80,40 +86,49 @@ void readFile()
 
     for (int i = 0; i < maxColumns; i++)
     {
-        pid_t pid = fork();
-        switch (pid)
-        {
-        case -1: /* error performing fork */
-            perror("Fork");
-            exit(5);
-
-        case 0:                                         /* In the opgl child */
-            execlp("./child", "./child", (char *)NULL); /* execute opgl.cpp file */
-            perror("exec failure ");
-            exit(6);
-            break;
-
-            // default:           /* In the parent */
-            //     opglPid = pid; /* save the pid of the opgl child */
-        }
+        pid_t pid = createProcesses("./child");
         msg.msg_to = pid;
-        string column = "";
+        string column = to_string(i); // zero indexed column number
 
-        for (int j = 0; j < tokens.size(); j++)
+        unsigned j;
+        for (j = 0; j < tokens.size(); j++)
         {
-            column += tokens[j][i];
+            column += " " + tokens[j][i];
         }
+
         strcpy(msg.buffer, column.c_str());
-        cout << "PARENT COLUMN: " << column << endl;
+        cout << "PARENT: " << msg.buffer << endl;
 
         msgsnd(mid, &msg, strlen(msg.buffer), 0);
     }
+
+    // this code must be removed, and instead, shildren should inform the parent when they finish, and then the parent should remove the queue
     for (int i = 0; i < maxColumns; i++)
     {
         int status;
         wait(&status);
-        cout << "STATUS: " << status << endl;
     }
 
     msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
+    // ------------------------------------------------------------------------
+}
+
+pid_t createProcesses(char *file)
+{
+    pid_t pid = fork(); /* fork an opengl child process */
+    switch (pid)
+    {
+    case -1: /* error performing fork */
+        perror("Fork");
+        exit(7);
+
+    case 0:                               /* In the child */
+        execlp(file, file, (char *)NULL); /* execute passed file */
+        perror("exec failure ");
+        exit(8);
+        break;
+
+    default:        /* In the parent */
+        return pid; /* save the PID of the child */
+    }
 }
