@@ -78,7 +78,7 @@ void sendColumnToChildren()
     }
     // cout << "PARENT: " << key << endl;
 
-    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // check for IPC_CREAT flag
+    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // check for IPC_CREAT flag *********
     {
         perror("Queue creation");
         exit(4);
@@ -88,7 +88,7 @@ void sendColumnToChildren()
     {
         pid_t pid = createProcesses("./child");
         msg.msg_to = pid;
-        string column = to_string(i); // zero indexed column number
+        string column = to_string(i + 1); // one indexed column number
 
         unsigned j;
         for (j = 0; j < tokens.size(); j++)
