@@ -4,12 +4,21 @@ using namespace std;
 void readFile();
 pid_t createProcesses(char *);
 void sendColumnToChildren();
+void createSharedMemory();
 
 vector<vector<string>> tokens;
-int maxColumns = 0;
+int numOfColumns = 0;
 key_t key;
 int mid, n;
 MESSAGE msg;
+
+struct MEMORY memory;
+char *shmptr;
+int shmid, semid;
+pid_t pid = getpid();
+static ushort  start_val[1] = {1}; // TODO: change
+union semun arg;
+
 
 int main(int argc, char *argv[])
 {
@@ -51,12 +60,12 @@ void readFile()
             getline(sline, substr, ' ');
             words.push_back(substr);
         }
-        maxColumns = max(maxColumns, (int)words.size());
+        numOfColumns = max(numOfColumns, (int)words.size());
         tokens.push_back(words);
     }
     for (unsigned i = 0; i < tokens.size(); i++)
     {
-        while ((int)tokens[i].size() < maxColumns)
+        while ((int)tokens[i].size() < numOfColumns)
         {
             tokens[i].push_back("alright");
         }
@@ -84,7 +93,7 @@ void sendColumnToChildren()
         exit(4);
     }
 
-    for (int i = 0; i < maxColumns; i++)
+    for (int i = 0; i < numOfColumns; i++)
     {
         pid_t pid = createProcesses("./child");
         msg.msg_to = pid;
@@ -103,7 +112,7 @@ void sendColumnToChildren()
     }
 
     // this code must be removed, and instead, shildren should inform the parent when they finish, and then the parent should remove the queue
-    for (int i = 0; i < maxColumns; i++)
+    for (int i = 0; i < numOfColumns; i++)
     {
         int status;
         wait(&status);
@@ -130,5 +139,39 @@ pid_t createProcesses(char *file)
 
     default:        /* In the parent */
         return pid; /* save the PID of the child */
+    }
+}
+
+void createSharedMemory()
+{
+    // define memory
+    const int colNum = numOfColumns;
+    struct MEMORY
+    {
+        int head, tail;
+        char buffer[colNum][MAX_STRING_LENGTH];
+    };
+
+    // create and attache to shmem
+    if ((shmid = shmget((int)pid, sizeof(memory), IPC_CREAT | 0600)) == -1)
+    {
+        perror("shmget -- parent -- create")
+    }
+    if ((shmptr = (char *)shmat(shmid, 0, 0)) == (char *)-1)
+    {
+        perror("shmptr -- parent -- attach");
+        exit(1);
+    }
+    memcpy(shmptr, (char *)&memory, sizeof(memory));
+
+    // create sem
+    if((semid = semget((int) pid, 1, IPC_CREAT | 0666)) == -1){
+        perror("semget -- parent -- create");
+        exit(2);
+    }
+    arg.array = start_val;
+    if(semctl(semid, 0, SETALL, arg) == -1){
+        perror("semctl -- parent -- initialization");
+        exit(3);
     }
 }
