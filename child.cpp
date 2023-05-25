@@ -8,6 +8,7 @@ int mid, n;
 MESSAGE msg;
 
 void decode(string);
+vector<string> encode();
 
 int main(int argc, char *argv[])
 {
@@ -30,6 +31,19 @@ int main(int argc, char *argv[])
         perror("Child: reading msg from queue");
         exit(3);
     }
+    vector<string> words = encode();
+
+    string encodedColumn = "";
+    for (unsigned k = 0; k < words.size(); k++)
+    {
+        encodedColumn += words[k] + " ";
+    }
+    decode(encodedColumn);
+    return 0;
+}
+
+vector<string> encode()
+{
     stringstream sColumn(msg.buffer);
     vector<string> words;
     int col;
@@ -105,14 +119,7 @@ int main(int argc, char *argv[])
         // cout << substr << "::" << encodedStr << " ";
     }
     // cout << endl;
-
-    string encodedColumn = "";
-    for (unsigned k = 0; k < words.size(); k++)
-    {
-        encodedColumn += words[k] + " ";
-    }
-    decode(encodedColumn);
-    return 0;
+    return words;
 }
 
 void decode(string encodedColumn)
