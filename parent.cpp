@@ -12,13 +12,11 @@ key_t key;
 int mid, n;
 MESSAGE msg;
 
-struct MEMORY memory;
 char *shmptr;
 int shmid, semid;
 pid_t pid = getpid();
-static ushort  start_val[1] = {1}; // TODO: change
+static ushort start_val[1] = {1}; // TODO: change
 union semun arg;
-
 
 int main(int argc, char *argv[])
 {
@@ -122,7 +120,7 @@ void sendColumnToChildren()
     // ------------------------------------------------------------------------
 }
 
-pid_t createProcesses(char *file)
+pid_t createProcesses(char *file, char *argument)
 {
     pid_t pid = fork(); /* fork an opengl child process */
     switch (pid)
@@ -131,8 +129,8 @@ pid_t createProcesses(char *file)
         perror("Fork");
         exit(7);
 
-    case 0:                               /* In the child */
-        execlp(file, file, (char *)NULL); /* execute passed file */
+    case 0:                                                 /* In the child */
+        execlp(file, file, (char *)argument, (char *)NULL); /* execute passed file */
         perror("exec failure ");
         exit(8);
         break;
@@ -152,10 +150,12 @@ void createSharedMemory()
         char buffer[colNum][MAX_STRING_LENGTH];
     };
 
+    struct MEMORY memory;
+
     // create and attache to shmem
     if ((shmid = shmget((int)pid, sizeof(memory), IPC_CREAT | 0600)) == -1)
     {
-        perror("shmget -- parent -- create")
+        perror("shmget -- parent -- create");
     }
     if ((shmptr = (char *)shmat(shmid, 0, 0)) == (char *)-1)
     {
@@ -165,12 +165,14 @@ void createSharedMemory()
     memcpy(shmptr, (char *)&memory, sizeof(memory));
 
     // create sem
-    if((semid = semget((int) pid, 1, IPC_CREAT | 0666)) == -1){
+    if ((semid = semget((int)pid, 1, IPC_CREAT | 0666)) == -1)
+    {
         perror("semget -- parent -- create");
         exit(2);
     }
     arg.array = start_val;
-    if(semctl(semid, 0, SETALL, arg) == -1){
+    if (semctl(semid, 0, SETALL, arg) == -1)
+    {
         perror("semctl -- parent -- initialization");
         exit(3);
     }

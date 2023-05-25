@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <sys/shm.h>
+#include <sys/sem.h>
 
 #include <string>
 #include <limits.h>
@@ -24,7 +25,7 @@
 
 
 #define SEED   'm'		/* seed for ftok */
-#define NUMBER_OF_COLUMNS 1000
+// #define NUMBER_OF_COLUMNS 1000
 #define MAX_STRING_LENGTH 1024
 
 
