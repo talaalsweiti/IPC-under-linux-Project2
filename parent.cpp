@@ -269,17 +269,17 @@ void createSemaphore(key_t key, int i)
         exit(3);
     }
 
-    int sem_value;
-    for (int j = 0; j < numOfColumns; j++)
-    { /* display contents */
-        if ((sem_value = semctl(semid[i], j, GETVAL, 0)) == -1)
-        {
-            perror("semctl: GETVAL");
-            exit(4);
-        }
+    // int sem_value;
+    // for (int j = 0; j < numOfColumns; j++)
+    // { /* display contents */
+    //     if ((sem_value = semctl(semid[i], j, GETVAL, 0)) == -1)
+    //     {
+    //         perror("semctl: GETVAL");
+    //         exit(4);
+    //     }
 
-        printf("%d Semaphore%d: %d has value of %d\n", semid[i], i, j, sem_value);
-    }
+    //     printf("%d Semaphore%d: %d has value of %d\n", semid[i], i, j, sem_value);
+    // }
 }
 
 void createSemaphores()

@@ -136,7 +136,7 @@ void openSharedMemory()
 
 void openSemaphores()
 {
-    int *semid[] = {&mut_semid, &r_semid, &r_semid};
+    int *semid[] = {&mut_semid, &r_semid, &w_semid};
     int seeds[] = {SEM_MUT_SEED, SEM_R_SEED, SEM_W_SEED};
 
     key_t key;

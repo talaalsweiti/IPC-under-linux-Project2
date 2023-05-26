@@ -18,7 +18,7 @@ int main()
     openSharedMemory();
     openSemaphores();
 
-    cout << r_semid << endl;
+    cout << w_semid << endl;
     int sem_value;
     for (int j = 0; j < numOfColumns; j++)
     { /* display contents */
@@ -30,7 +30,7 @@ int main()
 
         printf("HELPER: Semaphore %d has value of %d\n", j, sem_value);
     }
-    sleep(10);
+    // sleep(10);
 
     int i = 4;
 
@@ -44,8 +44,13 @@ int main()
             col1 = col2;
             col2 = temp;
         }
+        else if (col1 == col2)
+        {
+            continue;
+        }
 
         acquire.sem_num = col1;
+        cout << "HELPER " << getpid() << " aq " << col1 << endl;
         if (semop(w_semid, &acquire, 1) == -1)
         {
             perror("HELPER: semop write sem1");
@@ -57,6 +62,7 @@ int main()
             exit(3);
         }
 
+        cout << "HELPER " << getpid() << " aq " << col2 << endl;
         acquire.sem_num = col2;
         if (semop(w_semid, &acquire, 1) == -1)
         {
@@ -78,6 +84,7 @@ int main()
         cout << "HELPER " << getpid() << " finished writting" << endl;
 
         release.sem_num = col1;
+        cout << "HELPER " << getpid() << " re " << col1 << endl;
         if (semop(w_semid, &release, 1) == -1)
         {
             perror("HELPER: semop write sem1");
@@ -89,6 +96,7 @@ int main()
             exit(3);
         }
 
+        cout << "HELPER " << getpid() << " re " << col2 << endl;
         release.sem_num = col2;
         if (semop(w_semid, &release, 1) == -1)
         {
@@ -100,9 +108,8 @@ int main()
             perror("HELPER: semop read sem2");
             exit(3);
         }
-
-        return 0;
     }
+    return 0;
 }
 
 void openSharedMemory()
@@ -127,7 +134,7 @@ void openSharedMemory()
 }
 void openSemaphores()
 {
-    int *semid[] = {&r_semid, &r_semid};
+    int *semid[] = {&r_semid, &w_semid};
     int seeds[] = {SEM_R_SEED, SEM_W_SEED};
 
     key_t key;
