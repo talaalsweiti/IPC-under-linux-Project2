@@ -2,17 +2,17 @@
 using namespace std;
 
 void readFile();
-pid_t createProcesses(char *);
+pid_t createProcesses(char *, char *);
 void sendColumnToChildren();
 void createSharedMemory();
 
 vector<vector<string>> tokens;
-int numOfColumns = 0;
+int numOfColumns = 0, numOfRows;
 key_t key;
 int mid, n;
 MESSAGE msg;
 
-char *shmptr;
+struct MEMORY *sharedMemory;
 int shmid, semid;
 pid_t pid = getpid();
 static ushort start_val[1] = {1}; // TODO: change
@@ -21,7 +21,8 @@ union semun arg;
 int main(int argc, char *argv[])
 {
     readFile();
-    sendColumnToChildren();
+    // sendColumnToChildren();
+    createSharedMemory();
     return 0;
 }
 
@@ -69,6 +70,8 @@ void readFile()
         }
     }
 
+    numOfRows = tokens.size();
+
     // vector<vector<string> > columns(tokens[0].size(), vector<string>(tokens.size()));
     // for (int i = 0; i < tokens[0].size(); i++)
     //     for (int j = 0; j < data.size(); j++) {
@@ -93,7 +96,7 @@ void sendColumnToChildren()
 
     for (int i = 0; i < numOfColumns; i++)
     {
-        pid_t pid = createProcesses("./child");
+        pid_t pid = createProcesses("./child", (char *)numOfColumns);
         msg.msg_to = pid;
         string column = to_string(i + 1); // one indexed column number
 
@@ -130,7 +133,7 @@ pid_t createProcesses(char *file, char *argument)
         exit(7);
 
     case 0:                                                 /* In the child */
-        execlp(file, file, (char *)argument, (char *)NULL); /* execute passed file */
+        execlp(file, file, argument, (char *)NULL); /* execute passed file */
         perror("exec failure ");
         exit(8);
         break;
@@ -142,27 +145,45 @@ pid_t createProcesses(char *file, char *argument)
 
 void createSharedMemory()
 {
-    // define memory
-    const int colNum = numOfColumns;
-    struct MEMORY
-    {
-        int head, tail;
-        char buffer[colNum][MAX_STRING_LENGTH];
-    };
 
-    struct MEMORY memory;
+    size_t size = sizeof(struct MEMORY) + numOfRows * numOfColumns * sizeof(char *);
 
     // create and attache to shmem
-    if ((shmid = shmget((int)pid, sizeof(memory), IPC_CREAT | 0600)) == -1)
+    if ((shmid = shmget((int)pid, size, IPC_CREAT | 0666)) == -1)
     {
         perror("shmget -- parent -- create");
     }
-    if ((shmptr = (char *)shmat(shmid, 0, 0)) == (char *)-1)
+    if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
     {
         perror("shmptr -- parent -- attach");
         exit(1);
     }
-    memcpy(shmptr, (char *)&memory, sizeof(memory));
+
+    sharedMemory->rows = numOfRows;
+    sharedMemory->cols = numOfColumns;
+
+
+    // just for testing
+    for (int i = 0; i < numOfRows; i++)
+    {
+        for (int j = 0; j < numOfColumns; j++)
+        {
+            sharedMemory->data[i * numOfColumns + j] = "Tala";
+            // cout << sharedMatrix->data[i * cols + j] << " ";
+        }
+        // cout << "\n";
+    }
+
+    // just for testing
+    for (int i = 0; i < numOfRows; i++)
+    {
+        for (int j = 0; j < numOfColumns; j++)
+        {
+            // sharedMatrix->data[i * cols + j] = "Tala";
+            cout << sharedMemory->data[i * numOfColumns + j] << " ";
+        }
+        cout << "\n";
+    }
 
     // create sem
     if ((semid = semget((int)pid, 1, IPC_CREAT | 0666)) == -1)

@@ -26,7 +26,7 @@
 
 #define SEED   'm'		/* seed for ftok */
 // #define NUMBER_OF_COLUMNS 1000
-#define MAX_STRING_LENGTH 1024
+//#define MAX_STRING_LENGTH 1024
 
 
 typedef struct {
@@ -39,6 +39,13 @@ union semun {
   int              val;
   struct semid_ds *buf;
   ushort          *array; 
+};
+
+struct MEMORY
+{
+    int rows;
+    int cols;
+    char* data[]; // Flexible array member
 };
 
 // struct MEMORY {
