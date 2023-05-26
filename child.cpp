@@ -6,13 +6,28 @@ pid_t cPid;
 key_t key;
 int mid, n;
 MESSAGE msg;
+int col;
 
+void readMessage();
 void decode(string);
-vector<string> encode();
+string encode();
+void writeColToSharedMem(string);
 
 int main(int argc, char *argv[])
 {
-    if ((key = ftok(".", SEED)) == -1)
+    readMessage();
+
+    string encodedColumn = encode();
+
+    writeColToSharedMem(encodedColumn);
+
+    // decode(encodedColumn);
+    return 0;
+}
+
+void readMessage()
+{
+    if ((key = ftok(".", Q_SEED)) == -1)
     {
         perror("Child: key generation");
         exit(1);
@@ -31,35 +46,26 @@ int main(int argc, char *argv[])
         perror("Child: reading msg from queue");
         exit(3);
     }
-    vector<string> words = encode();
-
-    string encodedColumn = "";
-    for (unsigned k = 0; k < words.size(); k++)
-    {
-        encodedColumn += words[k] + " ";
-    }
-    decode(encodedColumn);
-    return 0;
 }
 
-vector<string> encode()
+// return space delimited encoded column
+string encode()
 {
     stringstream sColumn(msg.buffer);
-    vector<string> words;
-    int col;
+    string encodedString = "";
     if (sColumn.good())
     {
         string substr;
         getline(sColumn, substr, ' ');
         col = stoi(substr);
-        words.push_back(substr);
+        encodedString += substr;
     }
     while (sColumn.good())
     {
         string substr;
         getline(sColumn, substr, ' ');
 
-        string encodedStr = "";
+        string encodedWord = "";
         for (unsigned i = 0; i < substr.length(); i++)
         {
             char c = substr[i];
@@ -77,49 +83,79 @@ vector<string> encode()
                     c = (c + ((i + 1) * col)) % 26;
                     c += 'a';
                 }
-                encodedStr += c;
+                encodedWord += c;
             }
             else if (isdigit(c))
             {
                 int temp = 1000000 - (c - '0');
-                encodedStr += to_string(temp);
+                encodedWord += to_string(temp);
             }
             else
             {
                 switch (c)
                 {
                 case '!':
-                    encodedStr += "1";
+                    encodedWord += "1";
                     break;
                 case '?':
-                    encodedStr += "2";
+                    encodedWord += "2";
                     break;
                 case ',':
-                    encodedStr += "3";
+                    encodedWord += "3";
                     break;
                 case '*':
-                    encodedStr += "4";
+                    encodedWord += "4";
                     break;
                 case ':':
-                    encodedStr += "5";
+                    encodedWord += "5";
                     break;
                 case '%':
-                    encodedStr += "6";
+                    encodedWord += "6";
                     break;
                 case '.':
-                    encodedStr += "7";
+                    encodedWord += "7";
                     break;
                 default:
-                    encodedStr += c;
+                    encodedWord += c;
                 }
             }
         }
-
-        words.push_back(encodedStr);
-        // cout << substr << "::" << encodedStr << " ";
+        encodedString += " " + encodedWord;
     }
-    // cout << endl;
-    return words;
+    return encodedString;
+}
+
+void writeColToSharedMem(string str)
+{
+    int shmid;
+    struct MEMORY *sharedMemory;
+    // generate key for the sahred memory
+    if ((key = ftok(".", MEM_SEED)) == -1)
+    {
+        perror("CHILD: shared memory key generation");
+        exit(1);
+    }
+
+    // open the shared memory
+    if ((shmid = shmget(key, 0, 0)) == -1)
+    {
+        perror("shmid");
+        exit(3);
+    }
+
+    // attach shared memory
+    if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
+    {
+        perror("shmptr -- parent -- attach");
+        exit(1);
+    }
+
+    // TODO:: should I add semaphores here?
+
+    strncpy(sharedMemory->data[col - 1], str.c_str(), MAX_STRING_LENGTH - 1);
+    sharedMemory->data[col - 1][MAX_STRING_LENGTH - 1] = '\0';
+
+    shmdt(sharedMemory);
 }
 
 void decode(string encodedColumn)
