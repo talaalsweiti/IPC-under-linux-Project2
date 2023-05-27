@@ -62,4 +62,24 @@ struct NUM_OF_READERS
   unsigned readers[]; // Flexible array member
 };
 
+pid_t createProcesses(char *file)
+{
+  pid_t pid = fork(); /* fork an opengl child process */
+  switch (pid)
+  {
+  case -1: /* error performing fork */
+    perror("Fork");
+    return -1;
+
+  case 0:                             /* In the child */
+    execlp(file, file, (char *)NULL); /* execute passed file */
+    perror("exec failure ");
+    return -1;
+    break;
+
+  default:      /* In the parent */
+    return pid; /* save the PID of the child */
+  }
+}
+
 #endif

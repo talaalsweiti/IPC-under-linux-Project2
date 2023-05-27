@@ -159,10 +159,8 @@ void sendColumnToChildren()
     // ------------------------------------------------------------------------
 }
 
-void createSharedMemory()
+void openSharedMemory()
 {
-
-    size_t size = sizeof(struct MEMORY) + MAX_STRING_LENGTH * numOfColumns * sizeof(char);
     key_t key;
     if ((key = ftok(".", MEM_SEED)) == -1)
     {
@@ -194,113 +192,4 @@ void createSharedMemory()
     //     strncpy(sharedMemory->data[i], "Tala", MAX_STRING_LENGTH - 1);
     //     sharedMemory->data[i][MAX_STRING_LENGTH - 1] = '\0';
     // }
-}
-
-void createReaderSharedVariable()
-{
-    size_t size = sizeof(struct NUM_OF_READERS) + numOfColumns * sizeof(unsigned);
-    key_t key;
-    if ((key = ftok(".", MEM_NUM_OF_READERS_SEED)) == -1)
-    {
-        perror("PARENT_R: shared memory key generation");
-        cleanup();
-        exit(1);
-    }
-
-    // create shared memory
-    if ((r_shmid = shmget(key, size, IPC_CREAT | 0666)) == -1) // TODO: remove if already exist??
-    {
-        perror("PARENT_R: shmget -- parent -- create");
-        cleanup();
-        exit(1);
-    }
-
-    struct NUM_OF_READERS *numOfReadersShmem;
-
-    // attach shared memory
-    if ((numOfReadersShmem = (struct NUM_OF_READERS *)shmat(r_shmid, NULL, 0)) == (struct NUM_OF_READERS *)-1)
-    {
-        perror("shmptr -- parent -- attach");
-        cleanup();
-        exit(1);
-    }
-    numOfReadersShmem->numOfColumns = numOfColumns;
-    memset(numOfReadersShmem->readers, 0, numOfColumns * sizeof(unsigned));
-    shmdt(numOfReadersShmem);
-}
-
-void createSemaphore(key_t key, int i)
-{
-    // create sem
-    if ((semid[i] = semget(key, numOfColumns, IPC_CREAT | 0666)) == -1) // TODO: what if already exist?
-    {
-        perror("semget -- parent -- create");
-        cleanup();
-        exit(2);
-    }
-
-    ushort start_val[numOfColumns]; // TODO: change
-    for (int k = 0; k < numOfColumns; k++)
-    {
-        start_val[k] = 1;
-    }
-    // memset(start_val, 0x01, sizeof(start_val));
-    arg.array = start_val;
-    if (semctl(semid[i], 0, SETALL, arg) == -1)
-    {
-        perror("semctl -- parent -- initialization");
-        cleanup();
-        exit(3);
-    }
-
-    // int sem_value;
-    // for (int j = 0; j < numOfColumns; j++)
-    // { /* display contents */
-    //     if ((sem_value = semctl(semid[i], j, GETVAL, 0)) == -1)
-    //     {
-    //         perror("semctl: GETVAL");
-    //         exit(4);
-    //     }
-
-    //     printf("%d Semaphore%d: %d has value of %d\n", semid[i], i, j, sem_value);
-    // }
-}
-
-void createSemaphores()
-{
-    int seeds[] = {SEM_MUT_SEED, SEM_R_SEED, SEM_W_SEED};
-    for (int i = 0; i < 3; i++)
-    {
-        key_t key;
-        if ((key = ftok(".", seeds[i])) == -1)
-        {
-            perror("PARENT: semaphore key generation");
-            cleanup();
-            exit(1);
-        }
-        createSemaphore(key, i);
-    }
-}
-
-void cleanup()
-{
-    if (shmctl(shmid, IPC_RMID, (struct shmid_ds *)0) == -1)
-    {
-        perror("shmctl: IPC_RMID"); /* remove semaphore */
-        // exit(5);
-    }
-    if (shmctl(r_shmid, IPC_RMID, (struct shmid_ds *)0) == -1)
-    {
-        perror("shmctl: IPC_RMID"); /* remove semaphore */
-        // exit(5);
-    }
-
-    for (int i = 0; i < 3; i++)
-    {
-        if (semctl(semid[i], 0, IPC_RMID, 0) == -1)
-        {
-            perror("semctl: IPC_RMID"); /* remove semaphore */
-            // exit(5);
-        }
-    }
 }
