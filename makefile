@@ -2,7 +2,7 @@ CC = g++ # specify the used compiler
 CFLAGS = -Wall # specify the options added on compile.
 # -Wall -> allow all warnings
 
-all: parent child helper sender # receiver readerTest spy masterSpy
+all: freetypeTest parent child helper sender # receiver readerTest spy masterSpy
 
 # compile parent.cpp
 parent: parent.cpp
@@ -36,3 +36,5 @@ receiver: receiver.cpp
 readerTest: readerTest.cpp
 	$(CC) $(CFLAGS) readerTest.cpp -o readerTest
 
+freetypeTest: freetypeTest.cpp
+	g++ freetypeTest.cpp -o freetypeTest -lglut -lGLU -lGL -lfreetype -I./resources/freetype2 -I./resources/libpng16
