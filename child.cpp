@@ -16,8 +16,11 @@ void writeColToSharedMem(string);
 int main(int argc, char *argv[])
 {
     readMessage();
+    // cout << "CHILD:: MSG: " << msg.buffer << endl;
 
     string encodedColumn = encode();
+
+    // cout << "CHILD:: ENCODED: " << encodedColumn << endl;
 
     writeColToSharedMem(encodedColumn);
 
@@ -32,7 +35,6 @@ void readMessage()
         perror("Child: key generation");
         exit(1);
     }
-    // cout << "CHILD: " << key << endl;
 
     if ((mid = msgget(key, 0)) == -1)
     {
@@ -154,6 +156,7 @@ void writeColToSharedMem(string str)
 
     strncpy(sharedMemory->data[col - 1], str.c_str(), MAX_STRING_LENGTH - 1);
     sharedMemory->data[col - 1][MAX_STRING_LENGTH - 1] = '\0';
+    cout << "CHILD:: ENCODED: " << sharedMemory->data[col - 1] << endl;
 
     shmdt(sharedMemory);
 }

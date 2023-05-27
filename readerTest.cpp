@@ -21,6 +21,7 @@ int main()
     // Access and modify the shared matrix
     while (j--)
     {
+        // cout << "WEEEEEEE " << numOfColumns <<endl;;
 
         for (int i = 0; i < numOfColumns; i++)
         {
@@ -58,7 +59,7 @@ int main()
                 exit(3);
             }
             // perform reading
-            cout << sharedMemory->data[i] << endl;
+            cout << i << " -- " << sharedMemory->data[i] << endl;
             cout << "    READING COL DONE " << endl;
 
             // done reading
@@ -85,7 +86,8 @@ int main()
                 }
             }
         }
-        // sleep(rand() % 5);
+        sleep(rand() % 3);
+        cout<<endl;
     }
 
     shmdt(sharedMemory);
@@ -131,7 +133,7 @@ void openSharedMemory()
     {
         perror("TEST: shmat");
     }
-    numOfColumns = readers->numOfColumns;
+    // numOfColumns = readers->numOfColumns;
 }
 
 void openSemaphores()

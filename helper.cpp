@@ -32,7 +32,7 @@ int main()
     }
     // sleep(10);
 
-    int i = 4;
+    int i = 10;
 
     while (1 && i--)
     {
@@ -108,6 +108,7 @@ int main()
             perror("HELPER: semop read sem2");
             exit(3);
         }
+        sleep(rand() % 3); // TODO:: REMOVE
     }
     return 0;
 }

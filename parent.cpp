@@ -34,19 +34,18 @@ int main(int argc, char *argv[])
     // create helpers, assume 2 helpers
     helpers = new pid_t[2];
 
-    sleep(2);
-    for (int i = 0; i < 2; i++)
-    {
-        helpers[i] = createProcesses("./helper");
-    }
+    // sleep(2);
+    // for (int i = 0; i < 2; i++)
+    // {
+    //     helpers[i] = createProcesses("./helper");
+    // }
 
-    for (int i = 0; i < 2; i++)
-    {
-        waitpid(helpers[i], NULL, 0);
-    }
+    // for (int i = 0; i < 2; i++)
+    // {
+    //     waitpid(helpers[i], NULL, 0);
+    // }
 
     sleep(5);
-
     cleanup();
     return 0;
 }
@@ -54,7 +53,7 @@ int main(int argc, char *argv[])
 void readFile()
 {
     FILE *fin;
-    string command = "sed -i -e \"s/\\s\\ */\\ /g; /^$/d\" sender.txt";
+    string command = "sed -e \"s/\\s\\ */\\ /g; /^$/d\" sender.txt | fmt -s -w 80 sender.txt > /tmp/sender.txt && mv /tmp/sender.txt sender.txt";
     if ((fin = popen(command.c_str(), "r")) == NULL)
     {
         perror("Preproccessing sender.txt");
@@ -201,7 +200,7 @@ void createSharedMemory()
 
     sharedMemory->rows = numOfColumns;
 
-    shmdt(sharedMemory);
+    shmdt(sharedMemory); // weee
 
     // // just for testing
     // for (int i = 0; i < sharedMemory->rows; i++)
@@ -233,14 +232,13 @@ void createReaderSharedVariable()
     struct NUM_OF_READERS *numOfReadersShmem;
 
     // attach shared memory
-    if ((numOfReadersShmem = (struct NUM_OF_READERS *)shmat(shmid, NULL, 0)) == (struct NUM_OF_READERS *)-1)
+    if ((numOfReadersShmem = (struct NUM_OF_READERS *)shmat(r_shmid, NULL, 0)) == (struct NUM_OF_READERS *)-1)
     {
         perror("shmptr -- parent -- attach");
         cleanup();
         exit(1);
     }
     numOfReadersShmem->numOfColumns = numOfColumns;
-
     memset(numOfReadersShmem->readers, 0, numOfColumns * sizeof(unsigned));
     shmdt(numOfReadersShmem);
 }
