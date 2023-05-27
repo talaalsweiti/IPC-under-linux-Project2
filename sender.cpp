@@ -6,11 +6,7 @@ int NUM_OF_HELPERS = 3;
 
 void readFile();
 void sendColumnToChildren();
-void createSharedMemory();
-void createSemaphore(key_t, int);
-void createSemaphores();
-void createReaderSharedVariable();
-void cleanup();
+void openSharedMemory();
 
 vector<vector<string>> tokens;
 int numOfColumns = 0, numOfRows;
@@ -29,28 +25,8 @@ union semun arg;
 int main(int argc, char *argv[])
 {
     readFile();
-    createSharedMemory();
+    openSharedMemory();
     sendColumnToChildren();
-    createReaderSharedVariable();
-    createSemaphores();
-
-    // create helpers, assume 2 helpers
-    helpers = new pid_t[NUM_OF_HELPERS];
-    spies = new pid_t[NUM_OF_SPIES];
-
-    // sleep(2);
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     helpers[i] = createProcesses("./helper");
-    // }
-
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     waitpid(helpers[i], NULL, 0);
-    // }
-
-    sleep(5);
-    cleanup();
     return 0;
 }
 
@@ -97,14 +73,6 @@ void readFile()
             tokens[i].push_back("alright");
         }
     }
-
-    // numOfRows = tokens.size();
-
-    // vector<vector<string> > columns(tokens[0].size(), vector<string>(tokens.size()));
-    // for (int i = 0; i < tokens[0].size(); i++)
-    //     for (int j = 0; j < data.size(); j++) {
-    //         columns[i][j] = tokens[j][i];
-    //     }
 }
 
 void sendColumnToChildren()
@@ -112,14 +80,12 @@ void sendColumnToChildren()
     if ((key = ftok(".", Q_SEED)) == -1)
     {
         perror("Parent: key generation");
-        cleanup();
         exit(3);
     }
 
     if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // TODO: check for IPC_CREAT flag *********
     {
         perror("Queue creation");
-        cleanup();
         exit(4);
     }
 
@@ -153,6 +119,10 @@ void sendColumnToChildren()
     {
         int status;
         wait(&status);
+        if (status != 0)
+        { // TODO : check & kill ther children
+            exit(1);
+        }
     }
 
     msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
@@ -168,8 +138,8 @@ void openSharedMemory()
         exit(1);
     }
 
-    // create shared memory
-    if ((shmid = shmget(key, size, IPC_CREAT | 0666)) == -1) // TODO: remove if already exist??
+    // open shared memory
+    if ((shmid = shmget(key, 0, 0)) == -1) // TODO: remove if already exist??
     {
         perror("shmget -- parent -- create");
         exit(1);

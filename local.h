@@ -27,8 +27,8 @@
 #define MEM_SEED 'b'                /* seed for ftok for shared memory */
 #define MEM_NUM_OF_READERS_SEED 'c' /* seed for ftok for num of readers shared memory */
 #define SEM_MUT_SEED 'd'            /* seed for ftok for mutex semaphore */
-#define SEM_R_SEED 'f'              /* seed for ftok for readers semaphore */
-#define SEM_W_SEED 'g'              /* seed for ftok for writers semaphore */
+#define SEM_R_SEED 'e'              /* seed for ftok for readers semaphore */
+#define SEM_W_SEED 'f'              /* seed for ftok for writers semaphore */
 
 // #define NUMBER_OF_COLUMNS 1000
 #define MAX_STRING_LENGTH 1024
