@@ -18,21 +18,7 @@ int main()
     openSharedMemory();
     openSemaphores();
 
-    cout << w_semid << endl;
-    int sem_value;
-    for (int j = 0; j < numOfColumns; j++)
-    { /* display contents */
-        if ((sem_value = semctl(w_semid, j, GETVAL, 0)) == -1)
-        {
-            perror("semctl: GETVAL");
-            exit(4);
-        }
-
-        printf("HELPER: Semaphore %d has value of %d\n", j, sem_value);
-    }
-    // sleep(10);
-
-    int i = 10;
+    int i = 10; // TODO: remove
 
     while (1 && i--)
     {
@@ -40,9 +26,7 @@ int main()
         col2 = rand() % numOfColumns;
         if (col1 > col2)
         {
-            unsigned temp = col1;
-            col1 = col2;
-            col2 = temp;
+            swap(col1, col2);
         }
         else if (col1 == col2)
         {
@@ -85,30 +69,31 @@ int main()
 
         release.sem_num = col1;
         cout << "HELPER " << getpid() << " re " << col1 << endl;
-        if (semop(w_semid, &release, 1) == -1)
-        {
-            perror("HELPER: semop write sem1");
-            exit(3);
-        }
         if (semop(r_semid, &release, 1) == -1)
         {
             perror("HELPER: semop read sem1");
             exit(3);
         }
+        if (semop(w_semid, &release, 1) == -1)
+        {
+            perror("HELPER: semop write sem1");
+            exit(3);
+        }
 
         cout << "HELPER " << getpid() << " re " << col2 << endl;
         release.sem_num = col2;
-        if (semop(w_semid, &release, 1) == -1)
-        {
-            perror("HELPER: semop write sem2");
-            exit(3);
-        }
         if (semop(r_semid, &release, 1) == -1)
         {
             perror("HELPER: semop read sem2");
             exit(3);
         }
-        sleep(rand() % 3); // TODO:: REMOVE
+        if (semop(w_semid, &release, 1) == -1)
+        {
+            perror("HELPER: semop write sem2");
+            exit(3);
+        }
+
+        sleep(rand() % 3); // TODO:: REMOVE?
     }
     return 0;
 }
