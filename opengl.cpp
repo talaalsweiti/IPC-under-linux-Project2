@@ -13,7 +13,6 @@ float translationY = -1.0f;
 
 FT_Library ftLibrary; // FreeType library context
 
-
 FT_Face fontFace; // Font face
 
 // Function to initialize FreeType
@@ -124,6 +123,28 @@ void drawCircle(float r, float x, float y)
     glEnd();
 }
 
+/* draw a rectangle of color(r,g,b) with point coordinates passed */
+void drawRectangle(float x, float y, float xLength, float yLength)
+{
+
+    glBegin(GL_QUADS); // draw a quad
+    /*
+     *x1,y2           *x2,y2
+               *x,y
+     *x1,y1           *x2,y1
+     */
+    float x1 = x - (0.5 * xLength);
+    float x2 = x + (0.5 * xLength);
+    float y1 = y - (0.5 * yLength);
+    float y2 = y + (0.5 * yLength);
+    // std::cout<<x1<<"\t"<<x2<<"\t"<<y1<<"\t"<<y2<<"\n";
+    glVertex2f(x1, y1); // bottom left corner
+    glVertex2f(x2, y1); // bottom right corner
+    glVertex2f(x2, y2); // top right corner
+    glVertex2f(x1, y2); // top left corner
+    glEnd();
+}
+
 // GLUT display function
 void display()
 {
@@ -132,10 +153,14 @@ void display()
 
     glColor3f(0.0f, 0.0f, 0.0f);
 
+    drawCircle(0.05, translationX, translationY);
+
+    
     // Render the text at position (0, 0)
     renderText("Hello, World! yeeeg", 0, 0, 24);
+    drawRectangle( 0.0f,0.0f, 0.1f, 0.3f);
+    drawCircle(0.05, translationX, translationY);
 
-    drawCircle(0.05, translationX ,  translationY);
     glutSwapBuffers();
 }
 
@@ -166,20 +191,22 @@ void reshape(int width, int height)
 void update(int value)
 {
     translationX += 0.01f; // Adjust translation speed as needed
-    if(translationX>1.0f){
+    if (translationX > 1.0f)
+    {
         return;
     }
-    
+
     glutPostRedisplay();
     glutTimerFunc(16, update, 0); // 16 milliseconds between updates (approximately 60 FPS)
 }
 void update2(int value)
 {
     translationY += 0.01f; // Adjust translation speed as needed
-    if(translationY>1.0f){
+    if (translationY > 1.0f)
+    {
         return;
     }
-    
+
     glutPostRedisplay();
     glutTimerFunc(64, update2, 0); // 16 milliseconds between updates (approximately 60 FPS)
 }
@@ -189,7 +216,7 @@ int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-    glutInitWindowSize(800, 600);
+    glutInitWindowSize(1000, 800);
     glutCreateWindow("FreeType Text Rendering");
 
     initFreeType();
@@ -207,4 +234,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
