@@ -4,12 +4,17 @@
 #include <math.h>
 #include <algorithm>
 #include <iostream>
+#include <string>
+#include <string.h>
+#define STRING_SIZE 16
 
 int WIN_HEIGHT;
 int WIN_WIDTH;
 int fontSize = 24;
 float translationX = -1.0f;
 float translationY = -1.0f;
+
+char *ROUND = new char[STRING_SIZE];
 
 FT_Library ftLibrary; // FreeType library context
 
@@ -61,6 +66,7 @@ void renderText(const char *text, float x, float y, int size)
     // Enable blending for transparency
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Set font rendering parameters
 
@@ -130,7 +136,7 @@ void drawRectangle(float x, float y, float xLength, float yLength)
     glBegin(GL_QUADS); // draw a quad
     /*
      *x1,y2           *x2,y2
-               *x,y
+     *x,y
      *x1,y1           *x2,y1
      */
     float x1 = x - (0.5 * xLength);
@@ -145,6 +151,22 @@ void drawRectangle(float x, float y, float xLength, float yLength)
     glEnd();
 }
 
+GLfloat convertColor(int value){
+    return static_cast<GLfloat>(value) / 255.0f;
+}
+
+void applyColor(int r, int g, int b){
+    glColor3f(static_cast<GLfloat>(r) / 255.0f, static_cast<GLfloat>(g) / 255.0f, static_cast<GLfloat>(b) / 255.0f);
+}
+
+/* display the round # at the top of the window */
+void drawRound()
+{
+    applyColor(210, 210, 210);
+    drawRectangle(0.0f, 0.9f, 0.4f, 0.2f);
+    renderText(ROUND, 0.0f, 0.9f, 24);
+}
+
 // GLUT display function
 void display()
 {
@@ -153,13 +175,16 @@ void display()
 
     glColor3f(0.0f, 0.0f, 0.0f);
 
-    drawCircle(0.05, translationX, translationY);
+    // drawCircle(0.05, translationX, translationY);
 
-    
     // Render the text at position (0, 0)
-    renderText("Hello, World! yeeeg", 0, 0, 24);
-    drawRectangle( 0.0f,0.0f, 0.1f, 0.3f);
-    drawCircle(0.05, translationX, translationY);
+    // renderText("Hello, World! yeeeg", 0, 0, 24);
+    // drawRectangle( 0.0f,0.0f, 0.1f, 0.3f);
+    // drawCircle(0.05, translationX, translationY);
+
+    std::string roundStr = "Round #";
+    strcpy(ROUND, roundStr.c_str());
+    drawRound();
 
     glutSwapBuffers();
 }
@@ -199,6 +224,7 @@ void update(int value)
     glutPostRedisplay();
     glutTimerFunc(16, update, 0); // 16 milliseconds between updates (approximately 60 FPS)
 }
+
 void update2(int value)
 {
     translationY += 0.01f; // Adjust translation speed as needed
