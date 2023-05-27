@@ -9,12 +9,12 @@ int shmid, r_shmid, mut_semid, r_semid, w_semid;
 static struct sembuf acquire = {0, -1, SEM_UNDO},
                      release = {0, 1, SEM_UNDO};
 
-void openSharedMemory();
+void createSharedMemory();
 void openSemaphores();
 
 int main()
 {
-    openSharedMemory();
+    createSharedMemory();
     openSemaphores();
     int j = 10;
     srand(getpid());
@@ -97,7 +97,7 @@ int main()
     return 0;
 }
 
-void openSharedMemory()
+void createSharedMemory()
 {
     key_t key = ftok(".", MEM_SEED);
     if (key == -1)

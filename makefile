@@ -2,7 +2,7 @@ CC = g++ # specify the used compiler
 CFLAGS = -Wall # specify the options added on compile.
 # -Wall -> allow all warnings
 
-all: freetypeTest parent child helper sender # receiver readerTest spy masterSpy
+all: freetypeTest parent child helper sender receiver #readerTest spy masterSpy
 
 # compile parent.cpp
 parent: parent.cpp
