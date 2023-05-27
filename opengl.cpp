@@ -5,27 +5,22 @@
 #include <algorithm>
 #include <iostream>
 
-using namespace std;
- 
 int WIN_HEIGHT;
 int WIN_WIDTH;
 int fontSize = 24;
 float translationX = -1.0f;
 float translationY = -1.0f;
 
-// FreeType library context
-FT_Library ftLibrary;
+FT_Library ftLibrary; // FreeType library context
 
-// Font face
-FT_Face fontFace;
+
+FT_Face fontFace; // Font face
 
 // Function to initialize FreeType
 void initFreeType()
 {
     // Initialize FreeType library
-    FT_Init_FreeType(&ftLibrary);
-
-    // Load the font face
+    FT_Init_FreeType(&ftLibrary); // Initialize FreeType library
 
     // /usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf
     FT_New_Face(ftLibrary, "./resources/UbuntuMono-R.ttf", 0, &fontFace);
@@ -39,7 +34,7 @@ void renderText(const char *text, float x, float y, int size)
 {
     x = (x + 1) * WIN_WIDTH / 2;
     y = (y + 1) * WIN_HEIGHT / 2;
-    float sizeF = (float)size * min(WIN_WIDTH, WIN_HEIGHT) / 600;
+    float sizeF = (float)size * std::min(WIN_WIDTH, WIN_HEIGHT) / 600;
     // fontSize = int(sizeF);
     FT_Set_Pixel_Sizes(fontFace, 0, int(sizeF));
 
@@ -60,18 +55,15 @@ void renderText(const char *text, float x, float y, int size)
         textWidth += (fontFace->glyph->advance.x >> 6);
     }
 
-    // Calculate the starting position to center the text
-    float startX = x - (textWidth / 2.0f);
+    float startX = x - (textWidth / 2.0f); // Calculate the starting position to center the text
 
-    // Set the position of the text
-    glTranslatef(startX, y, 0);
+    glTranslatef(startX, y, 0); // Set the position of the text
 
     // Enable blending for transparency
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    // Set font rendering parameters
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Set font rendering parameters
 
     // Iterate over the characters in the text
     for (c = text; *c; ++c)
@@ -80,8 +72,7 @@ void renderText(const char *text, float x, float y, int size)
         if (FT_Load_Char(fontFace, *c, FT_LOAD_RENDER))
             continue;
 
-        // Access the glyph's bitmap
-        FT_Bitmap *bitmap = &(fontFace->glyph->bitmap);
+        FT_Bitmap *bitmap = &(fontFace->glyph->bitmap); // Access the glyph's bitmap
 
         for (int row = 0; row < bitmap->rows / 2; ++row)
         {
@@ -100,8 +91,7 @@ void renderText(const char *text, float x, float y, int size)
         glRasterPos2f(fontFace->glyph->bitmap_left, -fontFace->glyph->bitmap_top);
         glDrawPixels(bitmap->width, bitmap->rows, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap->buffer);
 
-        // Move the pen position
-        glTranslatef((fontFace->glyph->advance.x >> 6) + 0 * fontSize, 0, 0);
+        glTranslatef((fontFace->glyph->advance.x >> 6) + 0 * fontSize, 0, 0); // Move the pen position
     }
 
     glPopMatrix();
@@ -109,6 +99,7 @@ void renderText(const char *text, float x, float y, int size)
     glPopMatrix();
 }
 
+// A function that draws a circule given its radius, and center x and y coordinates
 void drawCircle(float r, float x, float y)
 {
 
@@ -216,3 +207,4 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
