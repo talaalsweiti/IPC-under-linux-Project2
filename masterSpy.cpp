@@ -2,68 +2,54 @@
 
 using namespace std;
 int numOfColumns, numOfRows;
-int mid, shmid, r_shmid, mut_semid, r_semid, w_semid;
-int NUM_OF_SPIES = 3;
-
-static struct sembuf acquire = {0, -1, SEM_UNDO},
-                     release = {0, 1, SEM_UNDO};
+int mid;
+int NUM_OF_SPIES;
+MESSAGE msg;
 
 void decode(string, string[]);
 void writeToFile(char columns[][MAX_STRING_LENGTH]);
-void getDimensions();
 void openMessageQueue();
+bool flag = true; // will change when the parent sends a signal indicating that the reciever has finished
 
-int main()
+int main(int argc, char *argv[])
 {
+
+    pid_t pid = getpid();
+    if (argc != 4)
+    {
+        printf("Usage: %s numOfSpies numOfColumns numOfRows\n", argv[0]);
+        exit(1);
+    }
+
+    NUM_OF_SPIES = atoi(argv[1]);
+    numOfColumns = atoi(argv[2]);
+    numOfRows = atoi(argv[3]);
+
     openMessageQueue();
 
     char cols[numOfColumns][MAX_STRING_LENGTH];
     bool isExist[numOfColumns] = {false};
 
-    unsigned col;
-    int cntCols = 0;
-    // Access and modify the shared matrix, to get all columns
-    while (cntCols < numOfColumns)
+    pid_t spies[NUM_OF_SPIES];
+
+    for (int i = 0; i < NUM_OF_SPIES; i++)
     {
+        spies[i] = createProcesses("./spy");
+    }
 
-        col = rand() % numOfColumns;
-        cout << "IM RANDOM COL: " << col << endl;
+    int n, cntCols = 0;
+    // Access and modify the shared matrix, to get all columns
+    while (flag && cntCols < numOfColumns)
+    { // read message from queue
+        memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
 
-        acquire.sem_num = col;
-        release.sem_num = col;
-        if (semop(w_semid, &acquire, 1) == -1)
+        if ((n = msgrcv(mid, &msg, BUFSIZ, pid, 0)) == -1)
         {
-            perror("RECEIVER: semop write sem");
-            exit(3);
-        }
-        if (semop(mut_semid, &acquire, 1) == -1)
-        {
-            perror("RECEIVER: semop mut sem");
-            exit(3);
-        }
-        readers->readers[col]++;
-
-        if (semop(mut_semid, &release, 1) == -1)
-        {
-            perror("RECEIVER: semop read sem");
-            exit(3);
-        }
-        if (readers->readers[col] == 1)
-        {
-            if (semop(r_semid, &acquire, 1) == -1)
-            {
-                perror("RECEIVER: semop read sem");
-                exit(3);
-            }
-        }
-
-        if (semop(w_semid, &release, 1) == -1)
-        {
-            perror("RECEIVER: semop write sem");
+            perror("Child: reading msg from queue");
             exit(3);
         }
 
-        stringstream sline(sharedMemory->data[col]);
+        stringstream sline(msg.buffer);
         if (sline.good())
         {
             string colNumStr;
@@ -73,52 +59,25 @@ int main()
             {
                 cntCols++;
                 isExist[colNum - 1] = true;
-
-                strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
+                strncpy(cols[colNum - 1], msg.buffer, MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
-                cout << colNum << " -- " << sharedMemory->data[col] << endl;
+                cout << colNum << " -- " << msg.buffer << endl;
                 cout << "    READING COL DONE " << endl;
             }
         }
-
-        // done reading
-
-        if (semop(mut_semid, &acquire, 1) == -1)
-        {
-            perror("TEST: semop mut sem");
-            exit(3);
-        }
-        readers->readers[col]--;
-
-        if (semop(mut_semid, &release, 1) == -1)
-        {
-            perror("TEST: semop mut sem");
-            exit(3);
-        }
-
-        if (readers->readers[col] == 0)
-        {
-            if (semop(r_semid, &release, 1) == -1)
-            {
-                perror("TEST: semop read sem");
-                exit(3);
-            }
-        }
-
-        sleep(rand() % 3);
     }
 
-    shmdt(sharedMemory);
+    for (int i = 0; i < NUM_OF_SPIES; i++)
+    {
+        kill(spies[i], SIGUSR1);
+    }
+    cout << "TESTT" << endl;
 
     writeToFile(cols);
 
     // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     // Other processes can now attach to the same shared memory segment using the same key
     return 0;
-}
-
-void getDimensions()
-{
 }
 
 void openMessageQueue()
@@ -139,15 +98,14 @@ void openMessageQueue()
 
 void decode(string encodedColumn, string decodedRows[])
 {
+    cout << "WEEEEEEEEEEEE " << encodedColumn << endl;
     stringstream sColumn(encodedColumn);
-    vector<string> words;
     int col;
     if (sColumn.good())
     {
         string substr;
         getline(sColumn, substr, ' ');
         col = stoi(substr);
-        words.push_back(substr);
     }
 
     int row = 0;
@@ -247,25 +205,28 @@ void decode(string encodedColumn, string decodedRows[])
         }
         decodedRows[row] += decodedStr;
         row++;
-        words.push_back(decodedStr);
     }
 }
 
 void writeToFile(char columns[][MAX_STRING_LENGTH])
 {
+    cout << "ZFFTTT" << endl;
     string decodedRows[numOfRows];
+    cout << "ROWS:: " << numOfRows << endl;
     for (int i = 0; i < numOfColumns; i++)
     {
         decode(columns[i], decodedRows);
+        cout << "ZFFTTT2" << endl;
     }
 
-    ofstream receiverFile;
-    receiverFile.open("receiver.txt");
+    ofstream spyFile;
+    spyFile.open("spy.txt");
 
     for (int i = 0; i < numOfRows; i++)
     {
-        receiverFile << decodedRows[i] << "\n";
+        spyFile << decodedRows[i] << "\n";
+        cout << decodedRows[i] << "\n";
     }
 
-    receiverFile.close();
+    spyFile.close();
 }

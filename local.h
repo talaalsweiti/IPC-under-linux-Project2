@@ -63,7 +63,7 @@ struct NUM_OF_READERS
   unsigned readers[]; // Flexible array member
 };
 
-pid_t createProcesses(char *file, char *numOfColumns = NULL, char *numOfRows = NULL)
+pid_t createProcesses(char *file, char *numOfSpies = NULL, char *numOfColumns = NULL, char *numOfRows = NULL)
 {
   pid_t pid = fork(); /* fork an opengl child process */
   switch (pid)
@@ -72,8 +72,8 @@ pid_t createProcesses(char *file, char *numOfColumns = NULL, char *numOfRows = N
     perror("Fork");
     return -1;
 
-  case 0:                                                      /* In the child */
-    execlp(file, file, numOfColumns, numOfRows, (char *)NULL); /* execute passed file */
+  case 0:                                                                  /* In the child */
+    execlp(file, file, numOfSpies, numOfColumns, numOfRows, (char *)NULL); /* execute passed file */
     perror("exec failure ");
     return -1;
     break;

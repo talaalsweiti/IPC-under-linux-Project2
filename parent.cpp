@@ -13,9 +13,9 @@ void createSemaphore(key_t, int);
 void createSemaphores();
 void createReaderSharedVariable();
 void cleanup();
-void getNumberOfColumns();
+void getDimensions();
 vector<vector<string>> tokens;
-int numOfColumns = 0, numOfRows;
+int numOfColumns = 0, numOfRows = 0;
 key_t key;
 int mid, n;
 MESSAGE msg;
@@ -23,7 +23,7 @@ MESSAGE msg;
 struct MEMORY *sharedMemory;
 int shmid, r_shmid, semid[3];
 pid_t *helpers, *spies;
-pid_t sender, reciever, spy;
+pid_t sender, reciever, masterSpy;
 pid_t pid = getpid();
 
 union semun arg;
@@ -41,28 +41,37 @@ int main(int argc, char *argv[])
         cout << "sender failed" << endl;
         exit(1);
     }
-    getNumberOfColumns();
+    getDimensions();
     createReaderSharedVariable();
     createSemaphores();
 
     // create helpers, assume 2 helpers
     helpers = new pid_t[NUM_OF_HELPERS]; // TODO: free?
 
-    // sleep(2);
+    sleep(2);
     for (int i = 0; i < NUM_OF_HELPERS; i++)
     {
         helpers[i] = createProcesses("./helper");
     }
 
-    reciever = createProcesses("./receiver");
+    // reciever = createProcesses("./receiver");
+
+    char arg1[10], arg2[10], arg3[10];
+    sprintf(arg1, "%d", NUM_OF_SPIES);
+    sprintf(arg2, "%d", numOfColumns);
+    sprintf(arg3, "%d", numOfRows);
 
     // TODO: to reomve
-    waitpid(reciever, &status, 0);
-    if (status != 0)
-    {
-        cout << "recevier failed" << endl;
-        exit(2);
-    }
+    // waitpid(reciever, &status, 0);
+    // if (status != 0)
+    // {
+    //     cout << "recevier failed" << endl;
+    //     exit(2);
+    // }
+
+    masterSpy = createProcesses("./masterSpy", arg1, arg2, arg3);
+
+    waitpid(masterSpy, NULL, 0);
     for (int i = 0; i < NUM_OF_HELPERS; i++)
     {
         waitpid(helpers[i], NULL, 0);
@@ -70,7 +79,7 @@ int main(int argc, char *argv[])
 
     sleep(5);
     cleanup();
-    
+
     return 0;
 }
 
@@ -91,13 +100,16 @@ void readInputVariablesFile()
         getline(sline, variableName, ' ');
         string value;
         getline(sline, value, ' ');
-        if(variableName == "NUM_OF_HELPERS"){
+        if (variableName == "NUM_OF_HELPERS")
+        {
             NUM_OF_HELPERS = stoi(value);
         }
-        else if(variableName == "NUM_OF_SPIES"){
+        else if (variableName == "NUM_OF_SPIES")
+        {
             NUM_OF_SPIES = stoi(value);
         }
-        else if(variableName == "THRESHOLD"){
+        else if (variableName == "THRESHOLD")
+        {
             THRESHOLD = stoi(value);
         }
     }
@@ -252,7 +264,7 @@ void cleanup()
     }
 }
 
-void getNumberOfColumns()
+void getDimensions()
 {
     key_t key;
     if ((key = ftok(".", MEM_SEED)) == -1)
@@ -274,6 +286,7 @@ void getNumberOfColumns()
         exit(3);
     }
     numOfColumns = sharedMemory->numOfColumns;
+    numOfRows = sharedMemory->numOfRows;
     shmdt(sharedMemory);
 }
 

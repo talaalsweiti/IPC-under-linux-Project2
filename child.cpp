@@ -41,6 +41,7 @@ void readMessage()
         exit(2);
     }
     cPid = getpid();
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
 
     if ((n = msgrcv(mid, &msg, BUFSIZ, cPid, 0)) == -1)
     {

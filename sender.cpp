@@ -103,7 +103,8 @@ void sendColumnToChildren()
         {
             column += " " + tokens[j][i];
         }
-
+        
+        memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
         strcpy(msg.buffer, column.c_str());
         cout << "PARENT: " << msg.buffer << endl;
 
