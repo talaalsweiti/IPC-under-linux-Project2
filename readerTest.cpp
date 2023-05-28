@@ -115,7 +115,7 @@ void createSharedMemory()
     {
         perror("TEST: shmat");
     }
-    numOfColumns = sharedMemory->rows;
+    numOfColumns = sharedMemory->numOfColumns;
 
     key = ftok(".", MEM_NUM_OF_READERS_SEED);
     if (key == -1)

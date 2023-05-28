@@ -6,7 +6,8 @@ void sendColumnToChildren();
 void createSharedMemory();
 
 vector<vector<string>> tokens;
-int numOfColumns = 0, mid;
+int numOfColumns = 0, numOfRows = 0;
+int mid;
 key_t key;
 MESSAGE msg;
 struct MEMORY *sharedMemory;
@@ -66,20 +67,21 @@ void readFile()
             tokens[i].push_back("alright");
         }
     }
+    numOfRows = tokens.size();
 }
 
 void sendColumnToChildren()
 {
     if ((key = ftok(".", Q_SEED)) == -1)
     {
-        perror("Parent: key generation");
-        exit(3);
+        perror("Child: key generation");
+        exit(1);
     }
 
-    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // TODO: check for IPC_CREAT flag *********
+    if ((mid = msgget(key, 0)) == -1)
     {
-        perror("Queue creation");
-        exit(4);
+        perror("Child: Queue openning");
+        exit(2);
     }
 
     // char *colNumStr = NULL;
@@ -120,7 +122,7 @@ void sendColumnToChildren()
         }
     }
 
-    msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
+    // msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
     // ------------------------------------------------------------------------
 }
 
@@ -148,12 +150,13 @@ void createSharedMemory()
         exit(1);
     }
 
-    sharedMemory->rows = numOfColumns;
+    sharedMemory->numOfColumns = numOfColumns;
+    sharedMemory->numOfRows = numOfRows;
 
     shmdt(sharedMemory); // weee
 
     // // just for testing
-    // for (int i = 0; i < sharedMemory->rows; i++)
+    // for (int i = 0; i < sharedMemory->numOfColumns; i++)
     // {
     //     strncpy(sharedMemory->data[i], "Tala", MAX_STRING_LENGTH - 1);
     //     sharedMemory->data[i][MAX_STRING_LENGTH - 1] = '\0';

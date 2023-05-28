@@ -49,7 +49,8 @@ union semun
 
 struct MEMORY
 {
-  int rows;
+  int numOfRows;
+  int numOfColumns;
   // int cols;
   char data[][MAX_STRING_LENGTH]; // Flexible array member
 };

@@ -93,7 +93,12 @@ int main()
             exit(3);
         }
 
-        sleep(rand() % 3); // TODO:: REMOVE?
+        int sleepAmount = rand() % 5;
+        if (sleepAmount == 0)
+        {
+            sleepAmount = 1;
+        }
+        sleep(sleepAmount); // TODO:: REMOVE?
     }
     return 0;
 }
@@ -116,7 +121,7 @@ void createSharedMemory()
     {
         perror("HELPER: shmat");
     }
-    numOfColumns = sharedMemory->rows;
+    numOfColumns = sharedMemory->numOfColumns;
 }
 void openSemaphores()
 {

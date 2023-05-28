@@ -9,7 +9,6 @@ MESSAGE msg;
 int col;
 
 void readMessage();
-void decode(string);
 string encode();
 void writeColToSharedMem(string);
 
@@ -159,104 +158,4 @@ void writeColToSharedMem(string str)
     cout << "CHILD:: ENCODED: " << sharedMemory->data[col - 1] << endl;
 
     shmdt(sharedMemory);
-}
-
-void decode(string encodedColumn)
-{
-    stringstream sColumn(encodedColumn);
-    vector<string> words;
-    int col;
-    if (sColumn.good())
-    {
-        string substr;
-        getline(sColumn, substr, ' ');
-        col = stoi(substr);
-        words.push_back(substr);
-    }
-
-    while (sColumn.good())
-    {
-        string substr;
-        getline(sColumn, substr, ' ');
-
-        string decodedStr = "";
-        for (unsigned i = 0; i < substr.length(); i++)
-        {
-            char c = substr[i];
-            if (isalpha(c))
-            {
-                if (isupper(c))
-                {
-                    c -= 'A';
-                    c = (c - ((i + 1) * col));
-                    if (c < 0)
-                    {
-                        int temp = ((-1 * c / 26) + 1);
-                        c = temp * 26 + c;
-                    }
-                    c += 'A';
-                }
-                else
-                {
-                    c -= 'a';
-                    c = (c - ((i + 1) * col));
-                    if (c < 0)
-                    {
-                        int temp = ((-1 * c / 26) + 1);
-                        c = temp * 26 + c;
-                    }
-                    c += 'a';
-                }
-                decodedStr += c;
-            }
-            else if (isdigit(c))
-            {
-                if (c == '1' && i + 1 < substr.length() && substr[i + 1] == '0')
-                {
-                    decodedStr += "0";
-                    i += 6;
-                    continue;
-                }
-                if (c == '9' && i + 5 < substr.length())
-                {
-
-                    int temp = substr[i + 5] - '0';
-                    temp = 10 - temp;
-                    decodedStr += to_string(temp);
-                    i += 5;
-                    continue;
-                }
-
-                switch (c)
-                {
-                case '1':
-                    decodedStr += "!";
-                    break;
-                case '2':
-                    decodedStr += "?";
-                    break;
-                case '3':
-                    decodedStr += ",";
-                    break;
-                case '4':
-                    decodedStr += "*";
-                    break;
-                case '5':
-                    decodedStr += ":";
-                    break;
-                case '6':
-                    decodedStr += "%";
-                    break;
-                case '7':
-                    decodedStr += ".";
-                    break;
-                default:
-                    decodedStr += c;
-                }
-            }
-        }
-        words.push_back(decodedStr);
-        cout << substr << "::" << decodedStr << " ";
-    }
-    cout << endl;
 }
