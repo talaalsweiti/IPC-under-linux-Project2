@@ -237,6 +237,9 @@ void drawSharedMemory(int numberOfColumns)
         starty = (columns / 2) * length;
     }
 
+    // Draw Shared Memory Label
+    renderText("Shared Memory", 0 , starty + length, 18);
+
     int cnt = 1;
     for (int j = 0; j < columns; j++)
     {
@@ -282,7 +285,7 @@ void display()
     std::string roundStr = "Round #";
     strcpy(ROUND, roundStr.c_str());
     drawRound();
-    drawSharedMemory(6);
+    drawSharedMemory(20);
 
     glutSwapBuffers();
 }
