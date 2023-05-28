@@ -23,6 +23,7 @@ int RECEIVER_COLUMNS = 10;
 int SPY_COLUMNS = 5; 
 int RECEIVER_SCORE = 1;
 int SPY_SCORE = 2;
+std::string ROUND_WINNER = "Receiver";
 
 FT_Library ftLibrary; // FreeType library context
 
@@ -225,14 +226,14 @@ void applyColor(int r, int g, int b)
 void drawRound()
 {
     applyColor(210, 210, 210);
-    drawRectangle(0.0f, 0.9f, 0.4f, 0.2f, false);
-    renderText(ROUND, 0.0f, 0.9f, 24);
+    drawRectangle(0.0f, 0.8f, 0.4f, 0.2f, false);
+    renderText(ROUND, 0.0f, 0.8f, 24);
 }
 
 void drawSharedMemory(int numberOfColumns)
 {
-    numberOfColumns = 10;
-    sharedInfo = {{6,0}, {1,1}, {2, 2}, {4, 3}, {5, 2}, {7, 0}, {10, 0}, {9, 1}, {8, 3}, {3, 2}};
+    numberOfColumns = 20;
+    sharedInfo = {{6,0}, {1,1}, {2, 2}, {4, 3}, {5, 2}, {7, 0}, {10, 0}, {9, 1}, {8, 3}, {3, 2}, {6,0}, {1,1}, {2, 2}, {4, 3}, {5, 2}, {7, 0}, {10, 0}, {9, 1}, {8, 3}, {3, 2}};
 
     int rows, columns;
     findClosestNumbers(numberOfColumns, rows, columns);
@@ -340,6 +341,14 @@ void drawScores(){
     drawRectangle(0.7f, -0.8f, 0.15f, 0.1f, true, true);
 }
 
+void displayRoundWinner(){
+    applyColor(210, 210, 210);
+    drawRectangle(0.0f, -0.5, 0.4f, 0.2f, false);
+    applyColor(0, 0, 0);
+    
+    renderText("Round Winner", 0.0f, -0.48f, 18);
+    renderText(ROUND_WINNER.c_str(), 0.0f, -0.55f, 18);
+}
 
 // GLUT display function
 void display()
@@ -376,7 +385,7 @@ void display()
     drawSharedMemory(20);
     drawReceiverAndSpyLabels();
     drawScores();
-
+    displayRoundWinner();
     glutSwapBuffers();
 }
 
