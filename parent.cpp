@@ -1,10 +1,11 @@
 #include "local.h"
 using namespace std;
 
-int NUM_OF_SPIES = 4;
-int NUM_OF_HELPERS = 3;
+int NUM_OF_SPIES;
+int NUM_OF_HELPERS;
+int THRESHOLD;
 
-void readFile();
+void readInputVariablesFile();
 void createMessageQueue();
 void sendColumnToChildren();
 void createSharedMemory();
@@ -29,7 +30,7 @@ union semun arg;
 
 int main(int argc, char *argv[])
 {
-
+    readInputVariablesFile();
     int status;
     createMessageQueue();
     sender = createProcesses("./sender");
@@ -69,7 +70,38 @@ int main(int argc, char *argv[])
 
     sleep(5);
     cleanup();
+    
     return 0;
+}
+
+void readInputVariablesFile()
+{
+    ifstream inputVariableFile("inputVariables.txt");
+    if (!inputVariableFile.good())
+    {
+        perror("Open inputVariables.txt");
+        exit(2);
+    }
+
+    string line;
+    while (getline(inputVariableFile, line))
+    {
+        stringstream sline(line);
+        string variableName;
+        getline(sline, variableName, ' ');
+        string value;
+        getline(sline, value, ' ');
+        if(variableName == "NUM_OF_HELPERS"){
+            NUM_OF_HELPERS = stoi(value);
+        }
+        else if(variableName == "NUM_OF_SPIES"){
+            NUM_OF_SPIES = stoi(value);
+        }
+        else if(variableName == "THRESHOLD"){
+            THRESHOLD = stoi(value);
+        }
+    }
+    inputVariableFile.close();
 }
 
 void createSharedMemory()

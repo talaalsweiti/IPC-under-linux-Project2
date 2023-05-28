@@ -42,7 +42,7 @@ void readFile()
     ifstream senderFile("sender.txt");
     if (!senderFile.good())
     {
-        perror("Open range.txt");
+        perror("Open sender.txt");
         exit(2);
     }
 
