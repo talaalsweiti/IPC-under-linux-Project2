@@ -33,6 +33,35 @@ void initFreeType()
     FT_Set_Pixel_Sizes(fontFace, 0, fontSize);
 }
 
+void findClosestNumbers(int n, int &num1, int &num2)
+{
+    int sqrtN = static_cast<int>(std::sqrt(n));
+    num1 = sqrtN;
+    num2 = sqrtN;
+
+    // Iterate downwards to find the closest pair
+    while (num1 >= 1)
+    {
+        if (n % num1 == 0)
+        {
+            num2 = n / num1;
+            break;
+        }
+        num1--;
+    }
+
+    // Iterate upwards to find the closest pair
+    while (num2 <= n)
+    {
+        if (n % num2 == 0)
+        {
+            num1 = n / num2;
+            break;
+        }
+        num2++;
+    }
+}
+
 // Function to render text
 void renderText(const char *text, float x, float y, int size)
 {
@@ -66,7 +95,6 @@ void renderText(const char *text, float x, float y, int size)
     // Enable blending for transparency
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    
 
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Set font rendering parameters
 
@@ -130,10 +158,11 @@ void drawCircle(float r, float x, float y)
 }
 
 /* draw a rectangle of color(r,g,b) with point coordinates passed */
-void drawRectangle(float x, float y, float xLength, float yLength)
+void drawRectangle(float x, float y, float xLength, float yLength, bool drawBorder)
 {
 
     glBegin(GL_QUADS); // draw a quad
+
     /*
      *x1,y2           *x2,y2
      *x,y
@@ -149,13 +178,26 @@ void drawRectangle(float x, float y, float xLength, float yLength)
     glVertex2f(x2, y2); // top right corner
     glVertex2f(x1, y2); // top left corner
     glEnd();
+
+    if (drawBorder)
+    {
+        glBegin(GL_LINE_LOOP);
+        glColor3f(0.0f, 0.0f, 0.0f);
+        glVertex2f(x1, y1); // bottom left corner
+        glVertex2f(x2, y1); // bottom right corner
+        glVertex2f(x2, y2); // top right corner
+        glVertex2f(x1, y2); // top left corner
+        glEnd();
+    }
 }
 
-GLfloat convertColor(int value){
+GLfloat convertColor(int value)
+{
     return static_cast<GLfloat>(value) / 255.0f;
 }
 
-void applyColor(int r, int g, int b){
+void applyColor(int r, int g, int b)
+{
     glColor3f(static_cast<GLfloat>(r) / 255.0f, static_cast<GLfloat>(g) / 255.0f, static_cast<GLfloat>(b) / 255.0f);
 }
 
@@ -163,8 +205,49 @@ void applyColor(int r, int g, int b){
 void drawRound()
 {
     applyColor(210, 210, 210);
-    drawRectangle(0.0f, 0.9f, 0.4f, 0.2f);
+    drawRectangle(0.0f, 0.9f, 0.4f, 0.2f, false);
     renderText(ROUND, 0.0f, 0.9f, 24);
+}
+
+void drawSharedMemory(int numberOfColumns)
+{
+
+    int rows, columns;
+    findClosestNumbers(numberOfColumns, rows, columns);
+    if(rows > columns){
+        std::swap(rows, columns);
+    }
+    // std::cout<<rows<<"\t"<<columns<<"\n";
+    float length = 0.1f;
+    float startx, starty; // for the top left block
+    if (rows % 2 == 0)
+    {
+        startx = -1 * (rows / 2) * length + (length / 2.0);
+    }
+    else
+    {
+        startx = -1 * (rows / 2) * length;
+    }
+    if (columns % 2 == 0)
+    {
+        starty = (columns / 2) * length - (length / 2.0);
+    }
+    else
+    {
+        starty = (columns / 2) * length;
+    }
+
+    int cnt = 1;
+    for (int j = 0; j < columns; j++)
+    {
+        for (int i = 0; i < rows; i++)
+        {
+            applyColor(210, 210, 210);
+            drawRectangle(startx + (i * length), starty - (j * length), length, length, true);
+            renderText(std::to_string(cnt).c_str(), startx + (i * length), starty - (j * length), 16);
+            cnt++;
+        }
+    }
 }
 
 // GLUT display function
@@ -174,6 +257,20 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT);
 
     glColor3f(0.0f, 0.0f, 0.0f);
+
+    // // Draw the x-axis
+    // glColor3f(1.0, 0.0, 0.0); // Red color
+    // glBegin(GL_LINES);
+    // glVertex2f(-1.0, 0.0);
+    // glVertex2f(1.0, 0.0);
+    // glEnd();
+
+    // // Draw the y-axis
+    // glColor3f(0.0, 0.0, 1.0); // Blue color
+    // glBegin(GL_LINES);
+    // glVertex2f(0.0, -1.0);
+    // glVertex2f(0.0, 1.0);
+    // glEnd();
 
     // drawCircle(0.05, translationX, translationY);
 
@@ -185,6 +282,7 @@ void display()
     std::string roundStr = "Round #";
     strcpy(ROUND, roundStr.c_str());
     drawRound();
+    drawSharedMemory(6);
 
     glutSwapBuffers();
 }
@@ -242,7 +340,7 @@ int main(int argc, char **argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-    glutInitWindowSize(1000, 800);
+    glutInitWindowSize(900, 800);
     glutCreateWindow("FreeType Text Rendering");
 
     initFreeType();
