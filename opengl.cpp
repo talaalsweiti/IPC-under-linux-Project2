@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 #include <string.h>
+#include <vector>
+#include <utility>
 #define STRING_SIZE 16
 
 int WIN_HEIGHT;
@@ -13,6 +15,8 @@ int WIN_WIDTH;
 int fontSize = 24;
 float translationX = -1.0f;
 float translationY = -1.0f;
+std::vector<std::pair<int, int>> sharedInfo;
+
 
 char *ROUND = new char[STRING_SIZE];
 
@@ -215,13 +219,14 @@ void drawRound()
 
 void drawSharedMemory(int numberOfColumns)
 {
+    numberOfColumns = 10;
+    sharedInfo = {{6,0}, {1,1}, {2, 2}, {4, 3}, {5, 2}, {7, 0}, {10, 0}, {9, 1}, {8, 3}, {3, 2}};
 
     int rows, columns;
     findClosestNumbers(numberOfColumns, rows, columns);
     if(rows > columns){
         std::swap(rows, columns);
     }
-    // std::cout<<rows<<"\t"<<columns<<"\n";
     float length = 0.1f;
     float startx, starty; // for the top left block
     if (rows % 2 == 0)
@@ -245,15 +250,31 @@ void drawSharedMemory(int numberOfColumns)
     renderText("Shared Memory", 0 , starty + length, 18);
 
     int cnt = 1;
+    int index = 0;
     for (int j = 0; j <= columns; j++)
     {
         bool bbreak = false;
         for (int i = 0; i < rows; i++)
         {
-            applyColor(210, 210, 210);
+            switch (sharedInfo[index].second)
+            {
+            case 0: // none
+                applyColor(210, 210, 210);
+                break;
+            case 1: // receiver
+                applyColor(255, 204, 203);
+                break;
+            case 2: // spy
+                applyColor(0, 255, 255);
+                break;
+            default: // both
+                applyColor(191,128,191);
+                break;
+            }
             drawRectangle(startx + (i * length), starty - (j * length), length, length, true);
-            renderText(std::to_string(cnt).c_str(), startx + (i * length), starty - (j * length), 16);
+            renderText(std::to_string(sharedInfo[index].first).c_str(), startx + (i * length), starty - (j * length), 16);
             cnt++;
+            index++;
             if(cnt > numberOfColumns){
                 bbreak = true;
                 break;
@@ -264,6 +285,21 @@ void drawSharedMemory(int numberOfColumns)
         }
     }
 }
+
+void drawReceiverAndSpyLabels(){
+    applyColor(255, 204, 203);
+    drawRectangle(-0.7, 0.1, 0.3, 0.15, false);
+    applyColor(0, 0, 0);
+    renderText("Receiver", -0.7, 0.1, 20);
+    applyColor(0, 255, 255);
+    // applyColor(191,128,191);
+    drawRectangle(0.7, 0.1, 0.3, 0.15, false);
+    applyColor(0, 0, 0);
+    renderText("Spy", 0.7, 0.1, 20);
+
+    renderText("Receiver", -0.7, 0.1, 20);
+}
+
 
 // GLUT display function
 void display()
@@ -297,7 +333,8 @@ void display()
     std::string roundStr = "Round #";
     strcpy(ROUND, roundStr.c_str());
     drawRound();
-    drawSharedMemory(7);
+    drawSharedMemory(20);
+    drawReceiverAndSpyLabels();
 
     glutSwapBuffers();
 }
