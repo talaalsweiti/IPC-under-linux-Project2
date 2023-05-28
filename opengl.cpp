@@ -19,6 +19,10 @@ std::vector<std::pair<int, int>> sharedInfo;
 
 
 char *ROUND = new char[STRING_SIZE];
+int RECEIVER_COLUMNS = 10;
+int SPY_COLUMNS = 5; 
+int RECEIVER_SCORE = 1;
+int SPY_SCORE = 2;
 
 FT_Library ftLibrary; // FreeType library context
 
@@ -166,9 +170,14 @@ void drawCircle(float r, float x, float y)
 }
 
 /* draw a rectangle of color(r,g,b) with point coordinates passed */
-void drawRectangle(float x, float y, float xLength, float yLength, bool drawBorder)
+void drawRectangle(float x, float y, float xLength, float yLength, bool drawBorder, bool clearColor = false)
 {
+    if(clearColor){
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+        glColor4f(0.0f, 0.0f, 0.0f, 0.0f); // Set clear color (transparent)
+    }
     glBegin(GL_QUADS); // draw a quad
 
     /*
@@ -186,6 +195,9 @@ void drawRectangle(float x, float y, float xLength, float yLength, bool drawBord
     glVertex2f(x2, y2); // top right corner
     glVertex2f(x1, y2); // top left corner
     glEnd();
+    if(clearColor){
+        glDisable(GL_BLEND);
+    }
 
     if (drawBorder)
     {
@@ -291,13 +303,41 @@ void drawReceiverAndSpyLabels(){
     drawRectangle(-0.7, 0.1, 0.3, 0.15, false);
     applyColor(0, 0, 0);
     renderText("Receiver", -0.7, 0.1, 20);
+
     applyColor(0, 255, 255);
-    // applyColor(191,128,191);
     drawRectangle(0.7, 0.1, 0.3, 0.15, false);
     applyColor(0, 0, 0);
     renderText("Spy", 0.7, 0.1, 20);
 
-    renderText("Receiver", -0.7, 0.1, 20);
+    // obtained columns for receiver
+    renderText("# obtained columns", -0.7, -0.1, 18);
+    renderText(std::to_string(RECEIVER_COLUMNS).c_str(), -0.7, -0.2, 18);
+
+    // obtained columns for spy
+    renderText("# obtained columns", 0.7, -0.1, 18);
+    renderText(std::to_string(SPY_COLUMNS).c_str(), 0.7, -0.2, 18);
+}
+
+void drawScores(){
+    renderText("Total Score", 0, -0.8, 16);
+
+    glBegin(GL_LINES);              // Start drawing lines
+    glVertex2f(-0.6f, -0.8f);        // First endpoint of the line
+    glVertex2f(-0.2f, -0.8f);         // Second endpoint of the line
+    glEnd();                        // End drawing lines
+
+    glBegin(GL_LINES);              // Start drawing lines
+    glVertex2f(0.2f, -0.8f);        // First endpoint of the line
+    glVertex2f(0.6f, -0.8f);         // Second endpoint of the line
+    glEnd();                        // End drawing lines
+
+    // draw receiver score
+    renderText(std::to_string(RECEIVER_SCORE).c_str(), -0.7f, -0.8f, 16);
+    drawRectangle(-0.7f, -0.8f, 0.15f, 0.1f, true, true);
+
+    // draw spy score
+    renderText(std::to_string(SPY_SCORE).c_str(), 0.7f, -0.8f, 16);
+    drawRectangle(0.7f, -0.8f, 0.15f, 0.1f, true, true);
 }
 
 
@@ -335,6 +375,7 @@ void display()
     drawRound();
     drawSharedMemory(20);
     drawReceiverAndSpyLabels();
+    drawScores();
 
     glutSwapBuffers();
 }
