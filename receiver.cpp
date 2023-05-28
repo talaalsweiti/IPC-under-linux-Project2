@@ -14,13 +14,12 @@ void openSemaphores();
 
 int main()
 {
-    cout << "IM in recvier\n";
     createSharedMemory();
     openSemaphores();
     srand(getpid());
-    char cols[numOfColumns+1][MAX_STRING_LENGTH];
-    bool isExist[numOfColumns+1] = {false};
-    cout << "here\n";
+    char cols[numOfColumns][MAX_STRING_LENGTH];
+    bool isExist[numOfColumns] = {false};
+  
     unsigned col;
     int cntCols = 0;
     // Access and modify the shared matrix, to get all columns
@@ -72,19 +71,15 @@ int main()
         string colNumStr;
         getline(sline, colNumStr, ' ');
         int colNum = stoi(colNumStr);
-        cout << "MESSAGE " << sharedMemory->data[col] << endl;
-        cout <<  " COL NUMBER : "  << colNum << endl;
-        if (isExist[colNum])
+        if (isExist[colNum-1])
         {
-            cout << " MESSAGE ALREADY SAVED " <<  cols[colNum] << endl;
             continue;
         }
-        cout << "THIS A NEW MESSAGE" << endl;
         cntCols++;
-        isExist[colNum] = true;
+        isExist[colNum-1] = true;
 
-        strncpy(cols[colNum], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
-        cols[colNum][MAX_STRING_LENGTH - 1] = '\0';
+        strncpy(cols[colNum-1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
+        cols[colNum-1][MAX_STRING_LENGTH - 1] = '\0';
         cout << col << " -- " << sharedMemory->data[col] << endl;
         cout << "    READING COL DONE " << endl;
 
