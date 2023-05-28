@@ -9,14 +9,14 @@ int shmid, r_shmid, mut_semid, r_semid, w_semid;
 static struct sembuf acquire = {0, -1, SEM_UNDO},
                      release = {0, 1, SEM_UNDO};
 
-void createSharedMemory();
+void openSharedMemory();
 void openSemaphores();
 void decode(string, string[]);
 void writeToFile(char columns[][MAX_STRING_LENGTH]);
 
 int main()
 {
-    createSharedMemory();
+    openSharedMemory();
     openSemaphores();
     srand(getpid());
     char cols[numOfColumns][MAX_STRING_LENGTH];
@@ -29,7 +29,7 @@ int main()
     {
 
         col = rand() % numOfColumns;
-        // cout << "IM RANDOM COL: " << col << endl;
+        cout << "IM RANDOM COL: " << col << endl;
 
         acquire.sem_num = col;
         release.sem_num = col;
@@ -66,24 +66,22 @@ int main()
         }
 
         stringstream sline(sharedMemory->data[col]);
-        if (!sline.good())
+        if (sline.good())
         {
-            continue;
-        }
-        string colNumStr;
-        getline(sline, colNumStr, ' ');
-        int colNum = stoi(colNumStr);
-        if (isExist[colNum - 1])
-        {
-            continue;
-        }
-        cntCols++;
-        isExist[colNum - 1] = true;
+            string colNumStr;
+            getline(sline, colNumStr, ' ');
+            int colNum = stoi(colNumStr);
+            if (!isExist[colNum - 1])
+            {
+                cntCols++;
+                isExist[colNum - 1] = true;
 
-        strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
-        cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
-        // cout << col << " -- " << sharedMemory->data[col] << endl;
-        // cout << "    READING COL DONE " << endl;
+                strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
+                cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
+                cout << colNum << " -- " << sharedMemory->data[col] << endl;
+                cout << "    READING COL DONE " << endl;
+            }
+        }
 
         // done reading
 
@@ -121,7 +119,7 @@ int main()
     return 0;
 }
 
-void createSharedMemory()
+void openSharedMemory()
 {
     key_t key = ftok(".", MEM_SEED);
     if (key == -1)

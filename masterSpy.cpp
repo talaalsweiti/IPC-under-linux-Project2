@@ -2,23 +2,110 @@
 
 using namespace std;
 int numOfColumns, numOfRows;
-int mid;
-int NUM_OF_SPIES;
+int mid, shmid, r_shmid, mut_semid, r_semid, w_semid;
+int NUM_OF_SPIES = 3;
+
+static struct sembuf acquire = {0, -1, SEM_UNDO},
+                     release = {0, 1, SEM_UNDO};
 
 void decode(string, string[]);
 void writeToFile(char columns[][MAX_STRING_LENGTH]);
-void openMessageQueue();
 void getDimensions();
+void openMessageQueue();
 
 int main()
 {
+    openMessageQueue();
+
     char cols[numOfColumns][MAX_STRING_LENGTH];
     bool isExist[numOfColumns] = {false};
 
+    unsigned col;
     int cntCols = 0;
     // Access and modify the shared matrix, to get all columns
     while (cntCols < numOfColumns)
     {
+
+        col = rand() % numOfColumns;
+        cout << "IM RANDOM COL: " << col << endl;
+
+        acquire.sem_num = col;
+        release.sem_num = col;
+        if (semop(w_semid, &acquire, 1) == -1)
+        {
+            perror("RECEIVER: semop write sem");
+            exit(3);
+        }
+        if (semop(mut_semid, &acquire, 1) == -1)
+        {
+            perror("RECEIVER: semop mut sem");
+            exit(3);
+        }
+        readers->readers[col]++;
+
+        if (semop(mut_semid, &release, 1) == -1)
+        {
+            perror("RECEIVER: semop read sem");
+            exit(3);
+        }
+        if (readers->readers[col] == 1)
+        {
+            if (semop(r_semid, &acquire, 1) == -1)
+            {
+                perror("RECEIVER: semop read sem");
+                exit(3);
+            }
+        }
+
+        if (semop(w_semid, &release, 1) == -1)
+        {
+            perror("RECEIVER: semop write sem");
+            exit(3);
+        }
+
+        stringstream sline(sharedMemory->data[col]);
+        if (sline.good())
+        {
+            string colNumStr;
+            getline(sline, colNumStr, ' ');
+            int colNum = stoi(colNumStr);
+            if (!isExist[colNum - 1])
+            {
+                cntCols++;
+                isExist[colNum - 1] = true;
+
+                strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
+                cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
+                cout << colNum << " -- " << sharedMemory->data[col] << endl;
+                cout << "    READING COL DONE " << endl;
+            }
+        }
+
+        // done reading
+
+        if (semop(mut_semid, &acquire, 1) == -1)
+        {
+            perror("TEST: semop mut sem");
+            exit(3);
+        }
+        readers->readers[col]--;
+
+        if (semop(mut_semid, &release, 1) == -1)
+        {
+            perror("TEST: semop mut sem");
+            exit(3);
+        }
+
+        if (readers->readers[col] == 0)
+        {
+            if (semop(r_semid, &release, 1) == -1)
+            {
+                perror("TEST: semop read sem");
+                exit(3);
+            }
+        }
+
+        sleep(rand() % 3);
     }
 
     shmdt(sharedMemory);
@@ -28,6 +115,10 @@ int main()
     // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     // Other processes can now attach to the same shared memory segment using the same key
     return 0;
+}
+
+void getDimensions()
+{
 }
 
 void openMessageQueue()
