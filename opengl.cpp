@@ -60,6 +60,10 @@ void findClosestNumbers(int n, int &num1, int &num2)
         }
         num2++;
     }
+
+    if(num1 == 1 || num2 == 1){
+        findClosestNumbers(n-1, num1, num2);
+    }
 }
 
 // Function to render text
@@ -241,14 +245,22 @@ void drawSharedMemory(int numberOfColumns)
     renderText("Shared Memory", 0 , starty + length, 18);
 
     int cnt = 1;
-    for (int j = 0; j < columns; j++)
+    for (int j = 0; j <= columns; j++)
     {
+        bool bbreak = false;
         for (int i = 0; i < rows; i++)
         {
             applyColor(210, 210, 210);
             drawRectangle(startx + (i * length), starty - (j * length), length, length, true);
             renderText(std::to_string(cnt).c_str(), startx + (i * length), starty - (j * length), 16);
             cnt++;
+            if(cnt > numberOfColumns){
+                bbreak = true;
+                break;
+            }
+        }
+        if(bbreak){
+            break;
         }
     }
 }
@@ -285,7 +297,7 @@ void display()
     std::string roundStr = "Round #";
     strcpy(ROUND, roundStr.c_str());
     drawRound();
-    drawSharedMemory(20);
+    drawSharedMemory(7);
 
     glutSwapBuffers();
 }
