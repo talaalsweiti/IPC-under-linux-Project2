@@ -11,9 +11,7 @@ void decode(string, string[]);
 void writeToFile(char columns[][MAX_STRING_LENGTH]);
 void openMessageQueue();
 bool flag = true; // will change when the parent sends a signal indicating that the reciever has finished
-pid_t  *spies;
-
-
+pid_t *spies;
 
 int main(int argc, char *argv[])
 {
@@ -38,7 +36,6 @@ int main(int argc, char *argv[])
     bool isExist[numOfColumns] = {false};
 
     spies = new pid_t[NUM_OF_SPIES];
-
 
     for (int i = 0; i < NUM_OF_SPIES; i++)
     {
@@ -69,8 +66,8 @@ int main(int argc, char *argv[])
                 isExist[colNum - 1] = true;
                 strncpy(cols[colNum - 1], msg.buffer, MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
-                cout << "Column number: " << colNum << " -- MEssage : " << msg.buffer << endl;
-                cout << "Master Spy READING DONE " << endl;
+                cout << " Message in MASTER SPY: " << msg.buffer << endl;
+                // cout << "Master Spy READING DONE " << endl;
             }
         }
     }
@@ -79,11 +76,11 @@ int main(int argc, char *argv[])
     {
         kill(spies[i], SIGUSR1);
     }
-    cout << "MASTER SPY FINISHED" << endl;
-    
-    kill(getppid(), SIGUSR1);
 
     writeToFile(cols);
+    cout << "MASTER SPY FINISHED" << endl;
+
+    kill(getppid(), SIGUSR1);
 
     // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     // Other processes can now attach to the same shared memory segment using the same key
@@ -108,7 +105,7 @@ void openMessageQueue()
 
 void decode(string encodedColumn, string decodedRows[])
 {
-    // cout << "WEEEEEEEEEEEE " << encodedColumn << endl;
+    cout << "WEEEEEEEEEEEE " << encodedColumn << endl;
     stringstream sColumn(encodedColumn);
     int col;
     if (sColumn.good())
@@ -138,7 +135,9 @@ void decode(string encodedColumn, string decodedRows[])
                     {
                         int temp = ((-1 * c / 26) + 1);
                         c = temp * 26 + c;
+                        c = (temp * 26 + c) % 26;
                     }
+
                     c += 'A';
                 }
                 else
@@ -147,9 +146,10 @@ void decode(string encodedColumn, string decodedRows[])
                     c = (c - ((i + 1) * col));
                     if (c < 0)
                     {
+
                         int temp = ((-1 * c / 26) + 1);
-                        c = temp * 26 + c;
-                    }
+                        c = (temp * 26 + c) % 26;
+                    };
                     c += 'a';
                 }
                 decodedStr += c;
@@ -213,6 +213,7 @@ void decode(string encodedColumn, string decodedRows[])
         {
             decodedRows[row] += " ";
         }
+        cout << "wewe " << decodedStr << endl;
         decodedRows[row] += decodedStr;
         row++;
     }
@@ -220,13 +221,10 @@ void decode(string encodedColumn, string decodedRows[])
 
 void writeToFile(char columns[][MAX_STRING_LENGTH])
 {
-    // cout << "ZFFTTT" << endl;
     string decodedRows[numOfRows];
-    // cout << "ROWS:: " << numOfRows << endl;
     for (int i = 0; i < numOfColumns; i++)
     {
         decode(columns[i], decodedRows);
-        // cout << "ZFFTTT2" << endl;
     }
 
     ofstream spyFile;
@@ -235,7 +233,7 @@ void writeToFile(char columns[][MAX_STRING_LENGTH])
     for (int i = 0; i < numOfRows; i++)
     {
         spyFile << decodedRows[i] << "\n";
-        cout << "SPY deocding" << decodedRows[i] << "\n";
+        cout << "SPY deocding: " << decodedRows[i] << "\n";
     }
 
     spyFile.close();
@@ -252,9 +250,9 @@ void signalCatcher()
 
 void killSpies(int signum)
 {
-   for (int i = 0; i < NUM_OF_SPIES; i++)
+    for (int i = 0; i < NUM_OF_SPIES; i++)
     {
         kill(spies[i], SIGUSR1);
     }
-    kill(getpid(),9);
+    kill(getpid(), 9);
 }

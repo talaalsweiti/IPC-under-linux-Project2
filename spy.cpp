@@ -85,7 +85,7 @@ int main()
         msg.msg_to = ppid;
         cout << "SPY MESSAGE: " << msg.buffer << endl;
         msgsnd(mid, &msg, strlen(msg.buffer), 0);
-        cout << "SPY READING DONE " << endl;
+        // cout << "SPY READING DONE " << endl;
 
         if (semop(mut_semid, &acquire, 1) == -1)
         {
@@ -178,7 +178,7 @@ void openSharedMemory()
     }
     if ((r_shmid = shmget(key, 0, 0)) == -1)
     {
-        perror("TEST: shmid");
+        perror("SPY: shmid");
         exit(3);
     }
     // Attach the shared memory segment

@@ -85,8 +85,7 @@ int main()
 
                 strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
-                cout << "Column number: " << colNum << " --  message" << sharedMemory->data[col] << endl;
-                cout << "--RECEIVER READING  DONE--" << endl;
+                cout << "Message in RECEIVER: " << sharedMemory->data[col] << endl;
             }
         }
 
@@ -94,14 +93,14 @@ int main()
 
         if (semop(mut_semid, &acquire, 1) == -1)
         {
-            perror("TEST: semop mut sem");
+            perror("RECEIVER: semop mut sem");
             exit(3);
         }
         readers->readers[col]--;
 
         if (semop(mut_semid, &release, 1) == -1)
         {
-            perror("TEST: semop mut sem");
+            perror("RECEIVER: semop mut sem");
             exit(3);
         }
 
@@ -109,7 +108,7 @@ int main()
         {
             if (semop(r_semid, &release, 1) == -1)
             {
-                perror("TEST: semop read sem");
+                perror("RECEIVER: semop read sem");
                 exit(3);
             }
         }
@@ -123,6 +122,7 @@ int main()
         if (sigismember(&pendingSet, SIGUSR1))
         {
             printf("Handling pending SIGUSR1 signal...\n");
+            cout << "Signal recived"  << endl;
             // Handle the signal here
             //break;
         }
@@ -132,15 +132,13 @@ int main()
 
     shmdt(sharedMemory);
 
-    cout << "RECIVER IS DONE " <<endl;
-    //INFORM PARENT 
 
     writeToFile(cols);
 
-
+    //INFORM PARENT 
     kill(getppid(),SIGUSR2);
 
-    cout << "RECIVER IS DONE 2" <<endl;
+    cout << "RECIVER IS DONE " <<endl;
 
     // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     // Other processes can now attach to the same shared memory segment using the same key
@@ -338,6 +336,7 @@ void writeToFile(char columns[][MAX_STRING_LENGTH])
     for (int i = 0; i < numOfRows; i++)
     {
         receiverFile << decodedRows[i] << "\n";
+        cout <<  "RECEIVER decoding" << decodedRows[i] << endl;
     }
 
     receiverFile.close();

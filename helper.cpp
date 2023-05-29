@@ -36,7 +36,7 @@ int main()
         }
 
         acquire.sem_num = col1;
-        cout << "HELPER ID: " << getpid() << " acquire " << col1 << endl;
+        // cout << "HELPER ID: " << getpid() << " acquire " << col1 << endl;
         if (semop(w_semid, &acquire, 1) == -1)
         {
             perror("HELPER: semop write sem1");
@@ -48,7 +48,7 @@ int main()
             exit(3);
         }
 
-        cout << "HELPER ID: " << getpid() << " acquire " << col2 << endl;
+        // cout << "HELPER ID: " << getpid() << " acquire " << col2 << endl;
         acquire.sem_num = col2;
         if (semop(w_semid, &acquire, 1) == -1)
         {
@@ -61,16 +61,16 @@ int main()
             exit(3);
         }
 
-        cout << "HELPER ID : " << getpid() << " is writting" << endl;
+        // cout << "HELPER ID : " << getpid() << " is writting" << endl;
 
         char temp[MAX_STRING_LENGTH];
         strcpy(temp, sharedMemory->data[col1]);
         strcpy(sharedMemory->data[col1], sharedMemory->data[col2]);
         strcpy(sharedMemory->data[col2], temp);
-        cout << "HELPER ID : " << getpid() << " finished writting" << endl;
+        // cout << "HELPER ID : " << getpid() << " finished writting" << endl;
 
         release.sem_num = col1;
-        cout << "HELPER ID : " << getpid() << " requst " << col1 << endl;
+        // cout << "HELPER ID : " << getpid() << " requst " << col1 << endl;
         if (semop(r_semid, &release, 1) == -1)
         {
             perror("HELPER: semop read sem1");
@@ -82,7 +82,7 @@ int main()
             exit(3);
         }
 
-        cout << "HELPER " << getpid() << " re " << col2 << endl;
+        // cout << "HELPER " << getpid() << " re " << col2 << endl;
         release.sem_num = col2;
         if (semop(r_semid, &release, 1) == -1)
         {

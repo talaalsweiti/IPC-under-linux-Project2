@@ -4,6 +4,10 @@ using namespace std;
 int NUM_OF_SPIES;
 int NUM_OF_HELPERS;
 int THRESHOLD;
+int receiverFailedDecoding = 0;
+int receiverSuccessfulDecoding = 0;
+
+bool flg = true;
 
 void readInputVariablesFile();
 void createMessageQueue();
@@ -17,7 +21,7 @@ void getDimensions();
 void masterSpySignalCatcher(int);
 void receiverSignalCatcher(int);
 void addSignalCatchers();
-
+void processDeadSignalCatcher(int);
 vector<vector<string>> tokens;
 int numOfColumns = 0, numOfRows = 0;
 key_t key;
@@ -36,10 +40,7 @@ int main(int argc, char *argv[])
 {
     cout << "***************IM IN PARENT*************" << endl;
 
-    
     addSignalCatchers();
-    
-    
     readInputVariablesFile();
     int status;
     createMessageQueue();
@@ -63,26 +64,23 @@ int main(int argc, char *argv[])
     {
         helpers[i] = createProcesses("./helper");
     }
-
-    reciever = createProcesses("./receiver");
-
     char arg1[10], arg2[10], arg3[10];
     sprintf(arg1, "%d", NUM_OF_SPIES);
     sprintf(arg2, "%d", numOfColumns);
     sprintf(arg3, "%d", numOfRows);
-
-    masterSpy = createProcesses("./masterSpy", arg1, arg2, arg3);
-
-    // TODO: to reomve
-    waitpid(reciever, &status, 0);
-    if (status != 0)
+    while (receiverFailedDecoding < THRESHOLD && receiverSuccessfulDecoding < THRESHOLD)
     {
-        cout << "recevier failed" << endl;
-        exit(2);
+        cout << "STARTING" << endl;
+        reciever = createProcesses("./receiver");
+        masterSpy = createProcesses("./masterSpy", arg1, arg2, arg3);
+        while (flg)
+        {
+            pause();
+        }
+        flg = true;
+        sleep(2);
     }
 
-
-    waitpid(masterSpy, NULL, 0);
     for (int i = 0; i < NUM_OF_HELPERS; i++)
     {
         waitpid(helpers[i], NULL, 0);
@@ -293,7 +291,7 @@ void getDimensions()
     // Attach the shared memory segment
     if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
     {
-        perror("RECEIVER: shmat");
+        perror("PARENT: shmat");
         exit(3);
     }
     numOfColumns = sharedMemory->numOfColumns;
@@ -318,30 +316,44 @@ void createMessageQueue()
 
 void addSignalCatchers()
 {
-    if (sigset(SIGUSR1, masterSpySignalCatcher) == SIG_ERR) 
+    if (sigset(SIGUSR1, masterSpySignalCatcher) == SIG_ERR)
     {
         perror("SIGUSR1 handler");
         exit(4);
     }
 
-    if (sigset(SIGUSR2, receiverSignalCatcher) == SIG_ERR) 
+    if (sigset(SIGUSR2, receiverSignalCatcher) == SIG_ERR)
     {
         perror("SIGUSR2 handler");
         exit(4);
     }
+    if (sigset(SIGINT, processDeadSignalCatcher) == SIG_ERR)
+    {
+        perror("SIGINT handler");
 
+        exit(6);
+    }
 }
 
 void masterSpySignalCatcher(int signum)
 {
-   //send signal to reciver to stop
-    kill(reciever,SIGUSR1);
+    // send signal to reciver to stop
+    cout << "Master wins, kill reciever" << endl;
+    receiverFailedDecoding++;
+    kill(reciever, SIGUSR1);
+    flg = false;
 }
 
 void receiverSignalCatcher(int signum)
 {
-   //send signal to master spy to stop
-    // cout << "kill master" <<endl;
-    kill(masterSpy,SIGUSR2);
-   
+    // send signal to master spy to stop
+    cout << "Receiver wins, kill master" << endl;
+    receiverSuccessfulDecoding++;
+    kill(masterSpy, SIGUSR2);
+    flg = false;
+}
+void processDeadSignalCatcher(int signum)
+{
+    cleanup();
+    exit(signum);
 }
