@@ -22,6 +22,7 @@ void masterSpySignalCatcher(int);
 void receiverSignalCatcher(int);
 void addSignalCatchers();
 void processDeadSignalCatcher(int);
+bool isCorrectFile(string );
 vector<vector<string>> tokens;
 int numOfColumns = 0, numOfRows = 0;
 key_t key;
@@ -339,6 +340,8 @@ void masterSpySignalCatcher(int signum)
 {
     // send signal to reciver to stop
     cout << "Master wins, kill reciever" << endl;
+    bool flgg = isCorrectFile("spy.txt");
+    cout << flgg << endl;
     receiverFailedDecoding++;
     kill(reciever, SIGUSR1);
     flg = false;
@@ -348,6 +351,10 @@ void receiverSignalCatcher(int signum)
 {
     // send signal to master spy to stop
     cout << "Receiver wins, kill master" << endl;
+    bool flgg = isCorrectFile("receiver.txt");
+        cout << flgg << endl;
+
+
     receiverSuccessfulDecoding++;
     kill(masterSpy, SIGUSR2);
     flg = false;
@@ -356,4 +363,26 @@ void processDeadSignalCatcher(int signum)
 {
     cleanup();
     exit(signum);
+}
+
+bool isCorrectFile(string file)
+{
+    FILE *fp;
+    char buffer[128];
+    string command = "cmp sender.txt " + file;
+    fp = popen(command.c_str(), "r");
+    if (fp == NULL)
+    {
+        printf("Failed to run cmp command\n");
+        exit(1);
+    }
+
+    bool ans = fgets(buffer, sizeof(buffer), fp) == NULL;
+
+    if (pclose(fp) != 0)
+    {
+        printf("Error in closing cmp command\n");
+        exit(1);
+    }
+    return ans;
 }
