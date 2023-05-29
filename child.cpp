@@ -14,6 +14,9 @@ void writeColToSharedMem(string);
 
 int main(int argc, char *argv[])
 {
+
+    cout << "***************IM IN CHILD*************" << endl;
+
     readMessage();
     // cout << "CHILD:: MSG: " << msg.buffer << endl;
 
@@ -156,7 +159,8 @@ void writeColToSharedMem(string str)
 
     strncpy(sharedMemory->data[col - 1], str.c_str(), MAX_STRING_LENGTH - 1);
     sharedMemory->data[col - 1][MAX_STRING_LENGTH - 1] = '\0';
-    cout << "CHILD:: ENCODED: " << sharedMemory->data[col - 1] << endl;
+
+    cout << "CHILD: ENCODED: " << sharedMemory->data[col - 1] << endl;
 
     shmdt(sharedMemory);
 }

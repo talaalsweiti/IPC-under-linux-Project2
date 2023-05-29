@@ -16,6 +16,8 @@ void writeToFile(char columns[][MAX_STRING_LENGTH]);
 
 int main()
 {
+    cout << "***************IM IN RECEIVER*************" << endl;
+
     openSharedMemory();
     openSemaphores();
     srand(getpid());
@@ -29,7 +31,12 @@ int main()
     {
 
         col = rand() % numOfColumns;
-        cout << "IM RANDOM COL: " << col << endl;
+
+        // Block SIGUSR1
+        sigset_t signalSet;
+        sigemptyset(&signalSet);
+        sigaddset(&signalSet, SIGUSR1);
+        sigprocmask(SIG_BLOCK, &signalSet, NULL);
 
         acquire.sem_num = col;
         release.sem_num = col;
@@ -78,8 +85,8 @@ int main()
 
                 strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
-                cout << colNum << " -- " << sharedMemory->data[col] << endl;
-                cout << "    READING COL DONE " << endl;
+                cout << "Column number: " << colNum << " --  message" << sharedMemory->data[col] << endl;
+                cout << "--RECEIVER READING  DONE--" << endl;
             }
         }
 
@@ -107,12 +114,33 @@ int main()
             }
         }
 
+        // Unblock SIGUSR1
+        sigprocmask(SIG_UNBLOCK, &signalSet, NULL);
+
+        // Check for and handle pending signals
+        sigset_t pendingSet;
+        sigpending(&pendingSet);
+        if (sigismember(&pendingSet, SIGUSR1))
+        {
+            printf("Handling pending SIGUSR1 signal...\n");
+            // Handle the signal here
+            //break;
+        }
+
         sleep(rand() % 3);
     }
 
     shmdt(sharedMemory);
 
+    cout << "RECIVER IS DONE " <<endl;
+    //INFORM PARENT 
+
     writeToFile(cols);
+
+
+    kill(getppid(),SIGUSR2);
+
+    cout << "RECIVER IS DONE 2" <<endl;
 
     // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     // Other processes can now attach to the same shared memory segment using the same key
@@ -124,18 +152,18 @@ void openSharedMemory()
     key_t key = ftok(".", MEM_SEED);
     if (key == -1)
     {
-        perror("TEST: key generation");
+        perror("RECEIVER: key generation");
         exit(3);
     }
     if ((shmid = shmget(key, 0, 0)) == -1)
     {
-        perror("TEST: shmid");
+        perror("RECEIVER: shmid");
         exit(3);
     }
     // Attach the shared memory segment
     if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
     {
-        perror("TEST: shmat");
+        perror("RECEIVER: shmat");
         exit(3);
     }
     numOfColumns = sharedMemory->numOfColumns;
@@ -144,18 +172,18 @@ void openSharedMemory()
     key = ftok(".", MEM_NUM_OF_READERS_SEED);
     if (key == -1)
     {
-        perror("TEST: key generation");
+        perror("RECEIVER: key generation");
         exit(3);
     }
     if ((r_shmid = shmget(key, 0, 0)) == -1)
     {
-        perror("TEST: shmid");
+        perror("RECEIVER: shmid");
         exit(3);
     }
     // Attach the shared memory segment
     if ((readers = (struct NUM_OF_READERS *)shmat(r_shmid, NULL, 0)) == (struct NUM_OF_READERS *)-1)
     {
-        perror("TEST: shmat");
+        perror("RECEIVER: shmat");
         exit(3);
     }
     // numOfColumns = readers->numOfColumns;
@@ -171,12 +199,12 @@ void openSemaphores()
     {
         if ((key = ftok(".", seeds[i])) == -1)
         {
-            perror("TEST: semaphore key generation");
+            perror("RECEIVER: semaphore key generation");
             exit(1);
         }
         if ((*semid[i] = semget(key, numOfColumns, 0)) == -1)
         {
-            perror("TEST: semget obtaining semaphore");
+            perror("RECEIVER: semget obtaining semaphore");
             exit(2);
         }
     }

@@ -5,14 +5,19 @@ int numOfColumns, numOfRows;
 int mid;
 int NUM_OF_SPIES;
 MESSAGE msg;
-
+void killSpies(int);
+void signalCatcher();
 void decode(string, string[]);
 void writeToFile(char columns[][MAX_STRING_LENGTH]);
 void openMessageQueue();
 bool flag = true; // will change when the parent sends a signal indicating that the reciever has finished
+pid_t  *spies;
+
+
 
 int main(int argc, char *argv[])
 {
+    cout << "***************IM IN MASTER SPY*************" << endl;
 
     pid_t pid = getpid();
     if (argc != 4)
@@ -25,12 +30,15 @@ int main(int argc, char *argv[])
     numOfColumns = atoi(argv[2]);
     numOfRows = atoi(argv[3]);
 
+    signalCatcher();
+
     openMessageQueue();
 
     char cols[numOfColumns][MAX_STRING_LENGTH];
     bool isExist[numOfColumns] = {false};
 
-    pid_t spies[NUM_OF_SPIES];
+    spies = new pid_t[NUM_OF_SPIES];
+
 
     for (int i = 0; i < NUM_OF_SPIES; i++)
     {
@@ -45,8 +53,8 @@ int main(int argc, char *argv[])
 
         if ((n = msgrcv(mid, &msg, BUFSIZ, pid, 0)) == -1)
         {
-            perror("Child: reading msg from queue");
-            exit(3);
+            perror("Master Spy: reading msg from queue");
+            exit(10);
         }
 
         stringstream sline(msg.buffer);
@@ -61,8 +69,8 @@ int main(int argc, char *argv[])
                 isExist[colNum - 1] = true;
                 strncpy(cols[colNum - 1], msg.buffer, MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
-                cout << colNum << " -- " << msg.buffer << endl;
-                cout << "    READING COL DONE " << endl;
+                cout << "Column number: " << colNum << " -- MEssage : " << msg.buffer << endl;
+                cout << "Master Spy READING DONE " << endl;
             }
         }
     }
@@ -71,7 +79,9 @@ int main(int argc, char *argv[])
     {
         kill(spies[i], SIGUSR1);
     }
-    cout << "TESTT" << endl;
+    cout << "MASTER SPY FINISHED" << endl;
+    
+    kill(getppid(), SIGUSR1);
 
     writeToFile(cols);
 
@@ -85,20 +95,20 @@ void openMessageQueue()
     key_t key;
     if ((key = ftok(".", Q_SEED)) == -1)
     {
-        perror("Child: key generation");
+        perror("Master Spy:: key generation");
         exit(1);
     }
 
     if ((mid = msgget(key, 0)) == -1)
     {
-        perror("Child: Queue openning");
+        perror("Master Spy:: Queue openning");
         exit(2);
     }
 }
 
 void decode(string encodedColumn, string decodedRows[])
 {
-    cout << "WEEEEEEEEEEEE " << encodedColumn << endl;
+    // cout << "WEEEEEEEEEEEE " << encodedColumn << endl;
     stringstream sColumn(encodedColumn);
     int col;
     if (sColumn.good())
@@ -210,13 +220,13 @@ void decode(string encodedColumn, string decodedRows[])
 
 void writeToFile(char columns[][MAX_STRING_LENGTH])
 {
-    cout << "ZFFTTT" << endl;
+    // cout << "ZFFTTT" << endl;
     string decodedRows[numOfRows];
-    cout << "ROWS:: " << numOfRows << endl;
+    // cout << "ROWS:: " << numOfRows << endl;
     for (int i = 0; i < numOfColumns; i++)
     {
         decode(columns[i], decodedRows);
-        cout << "ZFFTTT2" << endl;
+        // cout << "ZFFTTT2" << endl;
     }
 
     ofstream spyFile;
@@ -225,8 +235,26 @@ void writeToFile(char columns[][MAX_STRING_LENGTH])
     for (int i = 0; i < numOfRows; i++)
     {
         spyFile << decodedRows[i] << "\n";
-        cout << decodedRows[i] << "\n";
+        cout << "SPY deocding" << decodedRows[i] << "\n";
     }
 
     spyFile.close();
+}
+
+void signalCatcher()
+{
+    if (sigset(SIGUSR2, killSpies) == SIG_ERR)
+    {
+        perror("SIGUSR2 handler");
+        exit(4);
+    }
+}
+
+void killSpies(int signum)
+{
+   for (int i = 0; i < NUM_OF_SPIES; i++)
+    {
+        kill(spies[i], SIGUSR1);
+    }
+    kill(getpid(),9);
 }

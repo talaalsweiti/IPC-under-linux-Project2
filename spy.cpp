@@ -18,6 +18,7 @@ void finishSignalCatcher(int);
 
 int main()
 {
+    cout << "***************IM IN SPY*************" << endl;
 
     if (sigset(SIGUSR1, finishSignalCatcher) == SIG_ERR) /* child is interrupted by SIGINT */
     {
@@ -37,7 +38,6 @@ int main()
     {
 
         col = rand() % numOfColumns;
-        cout << "IM RANDOM COL: " << col << endl;
 
         // Block SIGUSR1
         sigset_t signalSet;
@@ -49,33 +49,33 @@ int main()
         release.sem_num = col;
         if (semop(w_semid, &acquire, 1) == -1)
         {
-            perror("RECEIVER: semop write sem");
+            perror("SPY: semop write sem");
             exit(3);
         }
         if (semop(mut_semid, &acquire, 1) == -1)
         {
-            perror("RECEIVER: semop mut sem");
+            perror("SPY: semop mut sem");
             exit(3);
         }
         readers->readers[col]++;
 
         if (semop(mut_semid, &release, 1) == -1)
         {
-            perror("RECEIVER: semop read sem");
+            perror("SPY: semop read sem");
             exit(3);
         }
         if (readers->readers[col] == 1)
         {
             if (semop(r_semid, &acquire, 1) == -1)
             {
-                perror("RECEIVER: semop read sem");
+                perror("SPY: semop read sem");
                 exit(3);
             }
         }
 
         if (semop(w_semid, &release, 1) == -1)
         {
-            perror("RECEIVER: semop write sem");
+            perror("SPY: semop write sem");
             exit(3);
         }
 
@@ -83,20 +83,20 @@ int main()
         strcpy(msg.buffer, sharedMemory->data[col]);
         // msg.buffer[MAX_STRING_LENGTH - 1] = '\0';
         msg.msg_to = ppid;
-        cout << "SPYYY:: " << msg.buffer << endl;
+        cout << "SPY MESSAGE: " << msg.buffer << endl;
         msgsnd(mid, &msg, strlen(msg.buffer), 0);
-        cout << "    READING COL DONE " << endl;
+        cout << "SPY READING DONE " << endl;
 
         if (semop(mut_semid, &acquire, 1) == -1)
         {
-            perror("TEST: semop mut sem");
+            perror("SPY: semop mut sem");
             exit(3);
         }
         readers->readers[col]--;
 
         if (semop(mut_semid, &release, 1) == -1)
         {
-            perror("TEST: semop mut sem");
+            perror("SPY: semop mut sem");
             exit(3);
         }
 
@@ -104,7 +104,7 @@ int main()
         {
             if (semop(r_semid, &release, 1) == -1)
             {
-                perror("TEST: semop read sem");
+                perror("SPY: semop read sem");
                 exit(3);
             }
         }
@@ -119,6 +119,7 @@ int main()
         {
             printf("Handling pending SIGUSR1 signal...\n");
             // Handle the signal here
+            
             break;
         }
 
@@ -136,13 +137,13 @@ void openMessageQueue()
     key_t key;
     if ((key = ftok(".", Q_SEED)) == -1)
     {
-        perror("Child: key generation");
+        perror("SPY: key generation");
         exit(1);
     }
 
     if ((mid = msgget(key, 0)) == -1)
     {
-        perror("Child: Queue openning");
+        perror("SPY: Queue openning");
         exit(2);
     }
 }
@@ -152,18 +153,18 @@ void openSharedMemory()
     key_t key = ftok(".", MEM_SEED);
     if (key == -1)
     {
-        perror("TEST: key generation");
+        perror("SPY: key generation");
         exit(3);
     }
     if ((shmid = shmget(key, 0, 0)) == -1)
     {
-        perror("TEST: shmid");
+        perror("SPY: shmid");
         exit(3);
     }
     // Attach the shared memory segment
     if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
     {
-        perror("TEST: shmat");
+        perror("SPY: shmat");
         exit(3);
     }
     numOfColumns = sharedMemory->numOfColumns;
@@ -172,7 +173,7 @@ void openSharedMemory()
     key = ftok(".", MEM_NUM_OF_READERS_SEED);
     if (key == -1)
     {
-        perror("TEST: key generation");
+        perror("SPY: key generation");
         exit(3);
     }
     if ((r_shmid = shmget(key, 0, 0)) == -1)
@@ -183,7 +184,7 @@ void openSharedMemory()
     // Attach the shared memory segment
     if ((readers = (struct NUM_OF_READERS *)shmat(r_shmid, NULL, 0)) == (struct NUM_OF_READERS *)-1)
     {
-        perror("TEST: shmat");
+        perror("SPY: shmat");
         exit(3);
     }
     // numOfColumns = readers->numOfColumns;
@@ -199,12 +200,12 @@ void openSemaphores()
     {
         if ((key = ftok(".", seeds[i])) == -1)
         {
-            perror("TEST: semaphore key generation");
+            perror("SPY: semaphore key generation");
             exit(1);
         }
         if ((*semid[i] = semget(key, numOfColumns, 0)) == -1)
         {
-            perror("TEST: semget obtaining semaphore");
+            perror("SPY: semget obtaining semaphore");
             exit(2);
         }
     }

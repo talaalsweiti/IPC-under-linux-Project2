@@ -14,6 +14,10 @@ void createSemaphores();
 void createReaderSharedVariable();
 void cleanup();
 void getDimensions();
+void masterSpySignalCatcher(int);
+void receiverSignalCatcher(int);
+void addSignalCatchers();
+
 vector<vector<string>> tokens;
 int numOfColumns = 0, numOfRows = 0;
 key_t key;
@@ -30,6 +34,12 @@ union semun arg;
 
 int main(int argc, char *argv[])
 {
+    cout << "***************IM IN PARENT*************" << endl;
+
+    
+    addSignalCatchers();
+    
+    
     readInputVariablesFile();
     int status;
     createMessageQueue();
@@ -54,22 +64,23 @@ int main(int argc, char *argv[])
         helpers[i] = createProcesses("./helper");
     }
 
-    // reciever = createProcesses("./receiver");
+    reciever = createProcesses("./receiver");
 
     char arg1[10], arg2[10], arg3[10];
     sprintf(arg1, "%d", NUM_OF_SPIES);
     sprintf(arg2, "%d", numOfColumns);
     sprintf(arg3, "%d", numOfRows);
 
-    // TODO: to reomve
-    // waitpid(reciever, &status, 0);
-    // if (status != 0)
-    // {
-    //     cout << "recevier failed" << endl;
-    //     exit(2);
-    // }
-
     masterSpy = createProcesses("./masterSpy", arg1, arg2, arg3);
+
+    // TODO: to reomve
+    waitpid(reciever, &status, 0);
+    if (status != 0)
+    {
+        cout << "recevier failed" << endl;
+        exit(2);
+    }
+
 
     waitpid(masterSpy, NULL, 0);
     for (int i = 0; i < NUM_OF_HELPERS; i++)
@@ -303,4 +314,34 @@ void createMessageQueue()
         perror("Queue creation");
         exit(4);
     }
+}
+
+void addSignalCatchers()
+{
+    if (sigset(SIGUSR1, masterSpySignalCatcher) == SIG_ERR) 
+    {
+        perror("SIGUSR1 handler");
+        exit(4);
+    }
+
+    if (sigset(SIGUSR2, receiverSignalCatcher) == SIG_ERR) 
+    {
+        perror("SIGUSR2 handler");
+        exit(4);
+    }
+
+}
+
+void masterSpySignalCatcher(int signum)
+{
+   //send signal to reciver to stop
+    kill(reciever,SIGUSR1);
+}
+
+void receiverSignalCatcher(int signum)
+{
+   //send signal to master spy to stop
+    // cout << "kill master" <<endl;
+    kill(masterSpy,SIGUSR2);
+   
 }
