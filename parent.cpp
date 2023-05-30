@@ -55,6 +55,22 @@ int main(int argc, char *argv[])
         exit(1);
     }
     opengl = createProcesses("./opengl");
+
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    strcpy(msg.buffer, to_string(NUM_OF_HELPERS).c_str());
+    msg.msg_to = 6;
+    msgsnd(mid, &msg, strlen(msg.buffer), 0);
+    // sleep(3);
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    strcpy(msg.buffer, to_string(NUM_OF_SPIES).c_str());
+    msg.msg_to = 6;
+    msgsnd(mid, &msg, strlen(msg.buffer), 0);
+
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    strcpy(msg.buffer, to_string(THRESHOLD).c_str());
+    msg.msg_to = 6;
+    msgsnd(mid, &msg, strlen(msg.buffer), 0);
+
     getDimensions();
     createReaderSharedVariable();
     createSemaphores();
@@ -87,11 +103,11 @@ int main(int argc, char *argv[])
             pause();
         }
         flg = true;
-        sleep(2);
+        sleep(3);
         round++;
     }
 
-    sleep(5);
+    // sleep(5);
     cleanup();
 
     return 0;
@@ -116,15 +132,15 @@ void readInputVariablesFile()
         getline(sline, value, ' ');
         if (variableName == "NUM_OF_HELPERS")
         {
-            NUM_OF_HELPERS = stoi(value);
+            NUM_OF_HELPERS = min(stoi(value), 40);
         }
         else if (variableName == "NUM_OF_SPIES")
         {
-            NUM_OF_SPIES = stoi(value);
+            NUM_OF_SPIES = min(stoi(value), 40);
         }
         else if (variableName == "THRESHOLD")
         {
-            THRESHOLD = stoi(value);
+            THRESHOLD = min(stoi(value), 40);
         }
     }
     inputVariableFile.close();
@@ -338,9 +354,16 @@ void masterSpySignalCatcher(int signum)
 {
     // send signal to reciver to stop
     cout << "Master wins, kill reciever" << endl;
-    bool flgg = isCorrectFile("spy.txt");
-    cout << flgg << endl;
-    receiverFailedDecoding++;
+    // bool flgg = isCorrectFile("spy.txt");
+    // cout << flgg << endl;
+    if (isCorrectFile("spy.txt"))
+    {
+        receiverFailedDecoding++;
+        memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+        msg.msg_to = 5;
+        strcpy(msg.buffer, to_string(receiverFailedDecoding).c_str());
+        msgsnd(mid, &msg, strlen(msg.buffer), 0);
+    }
     kill(reciever, SIGUSR1);
     flg = false;
 }
@@ -349,10 +372,16 @@ void receiverSignalCatcher(int signum)
 {
     // send signal to master spy to stop
     cout << "Receiver wins, kill master" << endl;
-    bool flgg = isCorrectFile("receiver.txt");
-    cout << flgg << endl;
-
-    receiverSuccessfulDecoding++;
+    // bool flgg = isCorrectFile("receiver.txt");
+    // cout << flgg << endl;
+    if (isCorrectFile("receiver.txt"))
+    {
+        receiverSuccessfulDecoding++;
+        memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+        msg.msg_to = 4;
+        strcpy(msg.buffer, to_string(receiverSuccessfulDecoding).c_str());
+        msgsnd(mid, &msg, strlen(msg.buffer), 0);
+    }
     kill(masterSpy, SIGUSR2);
     flg = false;
 }

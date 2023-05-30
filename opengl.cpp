@@ -14,8 +14,6 @@
 int WIN_HEIGHT;
 int WIN_WIDTH;
 int fontSize = 24;
-float translationX = -1.0f;
-float translationY = -1.0f;
 std::vector<int> sharedMemoryInfo;
 std::vector<char> obtaindColumns;
 
@@ -27,10 +25,13 @@ char ROUND[STRING_SIZE];
 char roundNumber[STRING_SIZE] = "1";
 int RECEIVER_COLUMNS = 0;
 int SPY_COLUMNS = 0;
-int RECEIVER_SCORE = 1;
-int SPY_SCORE = 2;
+char RECEIVER_SCORE[STRING_SIZE] = "0";
+char SPY_SCORE[STRING_SIZE] = "0";
 int numberOfColumns = 20;
-std::string ROUND_WINNER = "Receiver";
+char ROUND_WINNER[STRING_SIZE] = "";
+char numOfHelpers[32] = "NUM_OF_HELPERS ";
+char numOfSpies[32] = "NUM_OF_SPIES ";
+char threshold[32] = "THRESHOLD ";
 
 FT_Library ftLibrary; // FreeType library context
 
@@ -350,11 +351,11 @@ void drawScores()
     glEnd();                 // End drawing lines
 
     // draw receiver score
-    renderText(std::to_string(RECEIVER_SCORE).c_str(), -0.7f, -0.8f, 16);
+    renderText(RECEIVER_SCORE, -0.7f, -0.8f, 16);
     drawRectangle(-0.7f, -0.8f, 0.15f, 0.1f, true, true);
 
     // draw spy score
-    renderText(std::to_string(SPY_SCORE).c_str(), 0.7f, -0.8f, 16);
+    renderText(SPY_SCORE, 0.7f, -0.8f, 16);
     drawRectangle(0.7f, -0.8f, 0.15f, 0.1f, true, true);
 }
 
@@ -365,22 +366,14 @@ void displayRoundWinner()
     applyColor(0, 0, 0);
 
     renderText("Round Winner", 0.0f, -0.48f, 18);
-    renderText(ROUND_WINNER.c_str(), 0.0f, -0.55f, 18);
+    renderText(ROUND_WINNER, 0.0f, -0.55f, 18);
 }
 
 void displayArguments()
 {
-    /*
-    NUM_OF_HELPERS 2
-    NUM_OF_SPIES 1
-    THRESHOLD 1
-    */
-    std::string numOfHelpers = "NUM_OF_HELPERS 2";
-    std::string numOfSpies = "NUM_OF_SPIES 1";
-    std::string threshold = "THRESHOLD 1";
-    renderText(numOfHelpers.c_str(), -0.75, 0.83, 16);
-    renderText(numOfSpies.c_str(), -0.75, 0.78, 16);
-    renderText(threshold.c_str(), -0.75, 0.73, 16);
+    renderText(numOfHelpers, -0.75, 0.83, 16);
+    renderText(numOfSpies, -0.75, 0.78, 16);
+    renderText(threshold, -0.75, 0.73, 16);
 }
 
 // GLUT display function
@@ -521,9 +514,10 @@ int updateRound()
         strcpy(temp, msg.buffer);
         if (strcmp(temp, roundNumber) != 0)
         {
-            strcpy(roundNumber, temp);
+            strcpy(roundNumber, msg.buffer);
             SPY_COLUMNS = 0;
             RECEIVER_COLUMNS = 0;
+            strcpy(ROUND_WINNER, "");
             for (int i = 0; i < numberOfColumns; i++)
             {
                 obtaindColumns[i] = 'n';
@@ -534,15 +528,95 @@ int updateRound()
     return 0;
 }
 
+int updateScore()
+{
+
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    if (msgrcv(mid, &msg, BUFSIZ, 4, IPC_NOWAIT) == -1)
+    {
+        if (errno != ENOMSG)
+        {
+            // perror("OPENGL:: msgrcv");
+            // exit(1);
+            return -1;
+        }
+    }
+    else
+    {
+        strcpy(RECEIVER_SCORE, msg.buffer);
+        strcpy(ROUND_WINNER, "Reciever");
+        return 0;
+    }
+
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    if (msgrcv(mid, &msg, BUFSIZ, 5, IPC_NOWAIT) == -1)
+    {
+        if (errno != ENOMSG)
+        {
+            return -1;
+        }
+    }
+    else
+    {
+        strcpy(SPY_SCORE, msg.buffer);
+        strcpy(ROUND_WINNER, "Master Spy");
+        return 0;
+    }
+
+    return 0;
+}
+
+// hardcodded, most probably we need to write it in a better way
+void getDefinedVariables()
+{
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    if (msgrcv(mid, &msg, BUFSIZ, 6, 0) == -1)
+    {
+        exit(1);
+    }
+    else
+    {
+        strcat(numOfHelpers, msg.buffer);
+    }
+
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    if (msgrcv(mid, &msg, BUFSIZ, 6, 0) == -1)
+    {
+        exit(1);
+    }
+    else
+    {
+        strcat(numOfSpies, msg.buffer);
+    }
+
+    memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+    if (msgrcv(mid, &msg, BUFSIZ, 6, 0) == -1)
+    {
+        exit(1);
+    }
+    else
+    {
+        strcat(threshold, msg.buffer);
+    }
+}
+
 void update(int value)
 {
+    if (updateRound() == -1)
+    {
+        return;
+    }
     // getNumOfColumns();
     if (getColumnsInfo() == -1)
     {
         return;
     }
     getSharedMemoryStatus();
-    updateRound();
+
+    if (updateScore() == -1)
+    {
+        return;
+    }
 
     glutPostRedisplay();
     glutTimerFunc(30, update, 0); // 16 milliseconds between updates (approximately 60 FPS)
@@ -553,6 +627,7 @@ int main(int argc, char **argv)
 {
     openMessageQueue();
     openSharedMemory();
+    getDefinedVariables();
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
     glutInitWindowSize(900, 800);
