@@ -4,6 +4,11 @@ using namespace std;
 int numOfColumns, numOfRows;
 static struct MEMORY *sharedMemory;
 static struct NUM_OF_READERS *readers;
+/*
+w_semid is used to coordinate access to the shared resource for writing
+mut_semid is used to protect critical sections where shared data is modified
+r_semid is used to coordinate access to the shared resource for reading, allowing multiple readers but excluding writers
+*/
 int mid, shmid, r_shmid, mut_semid, r_semid, w_semid;
 MESSAGE msg;
 
@@ -21,6 +26,12 @@ int main()
 {
     cout << "***************IM IN RECEIVER*************" << endl;
 
+    /*
+       set up a signal handler for the SIGUSR1 signal
+       sigset is used to establish a handler function
+       (finishSignalCatcher) that will be invoked when
+       the SIGUSR1 signal is received
+    */
     if (sigset(SIGUSR1, finishSignalCatcher) == SIG_ERR)
     {
         perror("SIGUSR1 handler");
@@ -30,44 +41,58 @@ int main()
     openSharedMemory();
     openSemaphores();
     srand(getpid());
-    char cols[numOfColumns][MAX_STRING_LENGTH];
+
+    char cols[numOfColumns][MAX_STRING_LENGTH]; // to store the columns
     bool isExist[numOfColumns] = {false};
 
     unsigned col;
     int cntCols = 0;
+
     // Access and modify the shared matrix, to get all columns
     while (cntCols < numOfColumns)
     {
-
+        // get a random column
         col = rand() % numOfColumns;
 
-        // Block SIGUSR1
-        sigset_t signalSet;
-        sigemptyset(&signalSet);
-        sigaddset(&signalSet, SIGUSR1);
-        sigprocmask(SIG_BLOCK, &signalSet, NULL);
+        // Block SIGUSR1 to handle the semaphors
+        sigset_t signalSet;                       // sigset_t is a data structure used to represent a set of signals.
+        sigemptyset(&signalSet);                  // ensures that signalSet is empty before adding any signals
+        sigaddset(&signalSet, SIGUSR1);           // adds the SIGUSR1 signal to the signal set
+        sigprocmask(SIG_BLOCK, &signalSet, NULL); // prevents the SIGUSR1 signal from being delivered to the process
 
         acquire.sem_num = col;
         release.sem_num = col;
+
+        // acquire the writing semaphore
         if (semop(w_semid, &acquire, 1) == -1)
         {
             perror("RECEIVER: semop write sem");
             exit(3);
         }
+        // acquire the mutex semaphore
         if (semop(mut_semid, &acquire, 1) == -1)
         {
             perror("RECEIVER: semop mut sem");
             exit(3);
         }
+
+        // increments the count of readers for a specific column
         readers->readers[col]++;
 
+        // release the mutex semaphore
         if (semop(mut_semid, &release, 1) == -1)
         {
             perror("RECEIVER: semop read sem");
             exit(3);
         }
+
+        /*
+        checks if the current process is the first reader for the specific column.
+        If true, it means that no other readers are currently accessing the column.
+        */
         if (readers->readers[col] == 1)
         {
+            // acquire the reading semaphore,to prevent concurrent writing
             if (semop(r_semid, &acquire, 1) == -1)
             {
                 perror("RECEIVER: semop read sem");
@@ -75,6 +100,7 @@ int main()
             }
         }
 
+        // releases the writing semaphore
         if (semop(w_semid, &release, 1) == -1)
         {
             perror("RECEIVER: semop write sem");
@@ -82,16 +108,17 @@ int main()
         }
 
         stringstream sline(sharedMemory->data[col]);
+
         if (sline.good())
         {
             string colNumStr;
             getline(sline, colNumStr, ' ');
             int colNum = stoi(colNumStr);
+            // check if has been processed before
             if (!isExist[colNum - 1])
             {
                 cntCols++;
                 isExist[colNum - 1] = true;
-
                 strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
                 cout << "Message in RECEIVER: " << sharedMemory->data[col] << endl;
@@ -103,19 +130,26 @@ int main()
 
         // done reading
 
+        // acquire the mutex semaphore
         if (semop(mut_semid, &acquire, 1) == -1)
         {
             perror("RECEIVER: semop mut sem");
             exit(3);
         }
+
+        // decrements the value of readers
         readers->readers[col]--;
 
+        // releases the mutex semaphore
         if (semop(mut_semid, &release, 1) == -1)
         {
             perror("RECEIVER: semop mut sem");
             exit(3);
         }
 
+        /*checks if there are no more readers
+        If true, releases the reader semaphore
+        */
         if (readers->readers[col] == 0)
         {
             if (semop(r_semid, &release, 1) == -1)
@@ -133,7 +167,6 @@ int main()
         sigpending(&pendingSet);
         if (sigismember(&pendingSet, SIGUSR1))
         {
-            printf("Handling pending SIGUSR1 signal...\n");
             cout << "Signal recived" << endl;
             shmdt(sharedMemory);
             exit(0);
@@ -146,7 +179,7 @@ int main()
 
     writeToFile(cols);
 
-    // INFORM PARENT
+    // Inform parent about finishing
     kill(getppid(), SIGUSR2);
 
     cout << "RECIVER IS DONE " << endl;
