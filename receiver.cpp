@@ -13,11 +13,17 @@ void openSharedMemory();
 void openSemaphores();
 void decode(string, string[]);
 void writeToFile(char columns[][MAX_STRING_LENGTH]);
+void finishSignalCatcher(int);
 
 int main()
 {
     cout << "***************IM IN RECEIVER*************" << endl;
 
+    if (sigset(SIGUSR1, finishSignalCatcher) == SIG_ERR) 
+    {
+        perror("SIGUSR1 handler");
+        exit(6);
+    }
     openSharedMemory();
     openSemaphores();
     srand(getpid());
@@ -122,9 +128,9 @@ int main()
         if (sigismember(&pendingSet, SIGUSR1))
         {
             printf("Handling pending SIGUSR1 signal...\n");
-            cout << "Signal recived"  << endl;
-            // Handle the signal here
-            //break;
+            cout << "Signal recived" << endl;
+            shmdt(sharedMemory);
+            exit(0);
         }
 
         sleep(rand() % 3);
@@ -132,16 +138,13 @@ int main()
 
     shmdt(sharedMemory);
 
-
     writeToFile(cols);
 
-    //INFORM PARENT 
-    kill(getppid(),SIGUSR2);
+    // INFORM PARENT
+    kill(getppid(), SIGUSR2);
 
-    cout << "RECIVER IS DONE " <<endl;
+    cout << "RECIVER IS DONE " << endl;
 
-    // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
-    // Other processes can now attach to the same shared memory segment using the same key
     return 0;
 }
 
@@ -184,7 +187,6 @@ void openSharedMemory()
         perror("RECEIVER: shmat");
         exit(3);
     }
-    // numOfColumns = readers->numOfColumns;
 }
 
 void openSemaphores()
@@ -240,7 +242,7 @@ void decode(string encodedColumn, string decodedRows[])
                     if (c < 0)
                     {
                         int temp = ((-1 * c / 26) + 1);
-                        c = temp * 26 + c;
+                        c = (temp * 26 + c) % 26;
                     }
                     c += 'A';
                 }
@@ -251,7 +253,7 @@ void decode(string encodedColumn, string decodedRows[])
                     if (c < 0)
                     {
                         int temp = ((-1 * c / 26) + 1);
-                        c = temp * 26 + c;
+                        c = (temp * 26 + c) % 26;
                     }
                     c += 'a';
                 }
@@ -336,8 +338,15 @@ void writeToFile(char columns[][MAX_STRING_LENGTH])
     for (int i = 0; i < numOfRows; i++)
     {
         receiverFile << decodedRows[i] << "\n";
-        cout <<  "RECEIVER decoding" << decodedRows[i] << endl;
+        cout << "RECEIVER decoding" << decodedRows[i] << endl;
     }
 
     receiverFile.close();
+}
+
+
+void finishSignalCatcher(int signum)
+{
+    shmdt(sharedMemory);
+    exit(signum);
 }

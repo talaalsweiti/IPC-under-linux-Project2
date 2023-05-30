@@ -10,7 +10,6 @@ void signalCatcher();
 void decode(string, string[]);
 void writeToFile(char columns[][MAX_STRING_LENGTH]);
 void openMessageQueue();
-bool flag = true; // will change when the parent sends a signal indicating that the reciever has finished
 pid_t *spies;
 
 int main(int argc, char *argv[])
@@ -43,8 +42,9 @@ int main(int argc, char *argv[])
     }
 
     int n, cntCols = 0;
+
     // Access and modify the shared matrix, to get all columns
-    while (flag && cntCols < numOfColumns)
+    while (cntCols < numOfColumns)
     { // read message from queue
         memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
 
@@ -67,7 +67,6 @@ int main(int argc, char *argv[])
                 strncpy(cols[colNum - 1], msg.buffer, MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
                 cout << " Message in MASTER SPY: " << msg.buffer << endl;
-                // cout << "Master Spy READING DONE " << endl;
             }
         }
     }
@@ -79,11 +78,8 @@ int main(int argc, char *argv[])
 
     writeToFile(cols);
     cout << "MASTER SPY FINISHED" << endl;
-
     kill(getppid(), SIGUSR1);
 
-    // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
-    // Other processes can now attach to the same shared memory segment using the same key
     return 0;
 }
 
@@ -105,7 +101,6 @@ void openMessageQueue()
 
 void decode(string encodedColumn, string decodedRows[])
 {
-    cout << "WEEEEEEEEEEEE " << encodedColumn << endl;
     stringstream sColumn(encodedColumn);
     int col;
     if (sColumn.good())
@@ -213,7 +208,6 @@ void decode(string encodedColumn, string decodedRows[])
         {
             decodedRows[row] += " ";
         }
-        cout << "wewe " << decodedStr << endl;
         decodedRows[row] += decodedStr;
         row++;
     }
@@ -254,5 +248,6 @@ void killSpies(int signum)
     {
         kill(spies[i], SIGUSR1);
     }
-    kill(getpid(), 9);
+    delete[] spies;
+    exit(signum);
 }

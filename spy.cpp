@@ -118,8 +118,6 @@ int main()
         if (sigismember(&pendingSet, SIGUSR1))
         {
             printf("Handling pending SIGUSR1 signal...\n");
-            // Handle the signal here
-            
             break;
         }
 
@@ -127,8 +125,6 @@ int main()
     }
 
     shmdt(sharedMemory);
-
-    // shmctl(shmid, IPC_RMID, (struct shmid_ds *)0);
     return 0;
 }
 
@@ -213,7 +209,6 @@ void openSemaphores()
 
 void finishSignalCatcher(int signum)
 {
-    // cout << "DONE\n";
     shmdt(sharedMemory);
     exit(signum);
 }
