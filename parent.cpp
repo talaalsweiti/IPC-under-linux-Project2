@@ -4,6 +4,10 @@ using namespace std;
 int NUM_OF_SPIES;
 int NUM_OF_HELPERS;
 int THRESHOLD;
+int receiverFailedDecoding = 0;
+int receiverSuccessfulDecoding = 0;
+
+bool flg = true;
 
 void readInputVariablesFile();
 void createMessageQueue();
@@ -13,9 +17,14 @@ void createSemaphore(key_t, int);
 void createSemaphores();
 void createReaderSharedVariable();
 void cleanup();
-void getNumberOfColumns();
+void getDimensions();
+void masterSpySignalCatcher(int);
+void receiverSignalCatcher(int);
+void addSignalCatchers();
+void processDeadSignalCatcher(int);
+bool isCorrectFile(string);
 vector<vector<string>> tokens;
-int numOfColumns = 0, numOfRows;
+int numOfColumns = 0, numOfRows = 0;
 key_t key;
 int mid, n;
 MESSAGE msg;
@@ -23,13 +32,16 @@ MESSAGE msg;
 struct MEMORY *sharedMemory;
 int shmid, r_shmid, semid[3];
 pid_t *helpers, *spies;
-pid_t sender, reciever, spy;
+pid_t sender, reciever, masterSpy;
 pid_t pid = getpid();
 
 union semun arg;
 
 int main(int argc, char *argv[])
 {
+    cout << "***************IM IN PARENT*************" << endl;
+
+    addSignalCatchers();
     readInputVariablesFile();
     int status;
     createMessageQueue();
@@ -39,38 +51,41 @@ int main(int argc, char *argv[])
     if (status != 0)
     {
         cout << "sender failed" << endl;
+        cleanup();
         exit(1);
     }
-    getNumberOfColumns();
+    getDimensions();
     createReaderSharedVariable();
     createSemaphores();
 
     // create helpers, assume 2 helpers
     helpers = new pid_t[NUM_OF_HELPERS]; // TODO: free?
 
-    // sleep(2);
+    sleep(2);
     for (int i = 0; i < NUM_OF_HELPERS; i++)
     {
         helpers[i] = createProcesses("./helper");
     }
-
-    reciever = createProcesses("./receiver");
-
-    // TODO: to reomve
-    waitpid(reciever, &status, 0);
-    if (status != 0)
+    char arg1[10], arg2[10], arg3[10];
+    sprintf(arg1, "%d", NUM_OF_SPIES);
+    sprintf(arg2, "%d", numOfColumns);
+    sprintf(arg3, "%d", numOfRows);
+    while (receiverFailedDecoding < THRESHOLD && receiverSuccessfulDecoding < THRESHOLD)
     {
-        cout << "recevier failed" << endl;
-        exit(2);
-    }
-    for (int i = 0; i < NUM_OF_HELPERS; i++)
-    {
-        waitpid(helpers[i], NULL, 0);
+        cout << "STARTING" << endl;
+        reciever = createProcesses("./receiver");
+        masterSpy = createProcesses("./masterSpy", arg1, arg2, arg3);
+        while (flg)
+        {
+            pause();
+        }
+        flg = true;
+        sleep(2);
     }
 
     sleep(5);
     cleanup();
-    
+
     return 0;
 }
 
@@ -91,13 +106,16 @@ void readInputVariablesFile()
         getline(sline, variableName, ' ');
         string value;
         getline(sline, value, ' ');
-        if(variableName == "NUM_OF_HELPERS"){
+        if (variableName == "NUM_OF_HELPERS")
+        {
             NUM_OF_HELPERS = stoi(value);
         }
-        else if(variableName == "NUM_OF_SPIES"){
+        else if (variableName == "NUM_OF_SPIES")
+        {
             NUM_OF_SPIES = stoi(value);
         }
-        else if(variableName == "THRESHOLD"){
+        else if (variableName == "THRESHOLD")
+        {
             THRESHOLD = stoi(value);
         }
     }
@@ -112,6 +130,7 @@ void createSharedMemory()
     if ((key = ftok(".", MEM_SEED)) == -1)
     {
         perror("PARENT: shared memory key generation");
+        cleanup();
         exit(1);
     }
 
@@ -119,6 +138,7 @@ void createSharedMemory()
     if ((shmid = shmget(key, size, IPC_CREAT | 0666)) == -1) // TODO: remove if already exist??
     {
         perror("shmget -- parent -- create");
+        cleanup();
         exit(1);
     }
 
@@ -126,19 +146,13 @@ void createSharedMemory()
     if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
     {
         perror("shmptr -- parent -- attach");
+        cleanup();
         exit(1);
     }
 
     sharedMemory->numOfColumns = numOfColumns;
 
-    shmdt(sharedMemory); // weee
-
-    // // just for testing
-    // for (int i = 0; i < sharedMemory->numOfColumns; i++)
-    // {
-    //     strncpy(sharedMemory->data[i], "Tala", MAX_STRING_LENGTH - 1);
-    //     sharedMemory->data[i][MAX_STRING_LENGTH - 1] = '\0';
-    // }
+    shmdt(sharedMemory);
 }
 
 void createReaderSharedVariable()
@@ -197,18 +211,6 @@ void createSemaphore(key_t key, int i)
         cleanup();
         exit(3);
     }
-
-    // int sem_value;
-    // for (int j = 0; j < numOfColumns; j++)
-    // { /* display contents */
-    //     if ((sem_value = semctl(semid[i], j, GETVAL, 0)) == -1)
-    //     {
-    //         perror("semctl: GETVAL");
-    //         exit(4);
-    //     }
-
-    //     printf("%d Semaphore%d: %d has value of %d\n", semid[i], i, j, sem_value);
-    // }
 }
 
 void createSemaphores()
@@ -229,16 +231,20 @@ void createSemaphores()
 
 void cleanup()
 {
-
+    for (int i = 0; i < NUM_OF_HELPERS; i++)
+    {
+        kill(helpers[i], SIGUSR1);
+    }
+    kill(reciever, SIGUSR1);
+    kill(masterSpy, SIGUSR2);
+    delete[] helpers;
     if (shmctl(shmid, IPC_RMID, (struct shmid_ds *)0) == -1)
     {
         perror("shmctl: IPC_RMID"); /* remove semaphore */
-        // exit(5);
     }
     if (shmctl(r_shmid, IPC_RMID, (struct shmid_ds *)0) == -1)
     {
         perror("shmctl: IPC_RMID"); /* remove semaphore */
-        // exit(5);
     }
     msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
 
@@ -247,33 +253,36 @@ void cleanup()
         if (semctl(semid[i], 0, IPC_RMID, 0) == -1)
         {
             perror("semctl: IPC_RMID"); /* remove semaphore */
-            // exit(5);
         }
     }
 }
 
-void getNumberOfColumns()
+void getDimensions()
 {
     key_t key;
     if ((key = ftok(".", MEM_SEED)) == -1)
     {
         perror("PARENT: shared memory key generation");
+        cleanup();
         exit(1);
     }
 
     if ((shmid = shmget(key, 0, 0)) == -1) // TODO: remove if already exist??
     {
         perror("shmget -- parent -- create");
+        cleanup();
         exit(1);
     }
 
     // Attach the shared memory segment
     if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
     {
-        perror("RECEIVER: shmat");
+        perror("PARENT: shmat");
+        cleanup();
         exit(3);
     }
     numOfColumns = sharedMemory->numOfColumns;
+    numOfRows = sharedMemory->numOfRows;
     shmdt(sharedMemory);
 }
 
@@ -282,12 +291,89 @@ void createMessageQueue()
     if ((key = ftok(".", Q_SEED)) == -1)
     {
         perror("Parent: key generation");
+        cleanup();
         exit(3);
     }
 
     if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // TODO: check for IPC_CREAT flag *********
     {
         perror("Queue creation");
+        cleanup();
         exit(4);
     }
+}
+
+void addSignalCatchers()
+{
+    if (sigset(SIGUSR1, masterSpySignalCatcher) == SIG_ERR)
+    {
+        perror("SIGUSR1 handler");
+        cleanup();
+        exit(4);
+    }
+
+    if (sigset(SIGUSR2, receiverSignalCatcher) == SIG_ERR)
+    {
+        perror("SIGUSR2 handler");
+        cleanup();
+        exit(4);
+    }
+    if (sigset(SIGINT, processDeadSignalCatcher) == SIG_ERR)
+    {
+        perror("SIGINT handler");
+        cleanup();
+        exit(6);
+    }
+}
+
+void masterSpySignalCatcher(int signum)
+{
+    // send signal to reciver to stop
+    cout << "Master wins, kill reciever" << endl;
+    bool flgg = isCorrectFile("spy.txt");
+    cout << flgg << endl;
+    receiverFailedDecoding++;
+    kill(reciever, SIGUSR1);
+    flg = false;
+}
+
+void receiverSignalCatcher(int signum)
+{
+    // send signal to master spy to stop
+    cout << "Receiver wins, kill master" << endl;
+    bool flgg = isCorrectFile("receiver.txt");
+    cout << flgg << endl;
+
+    receiverSuccessfulDecoding++;
+    kill(masterSpy, SIGUSR2);
+    flg = false;
+}
+void processDeadSignalCatcher(int signum)
+{
+    cleanup();
+    exit(signum);
+}
+
+bool isCorrectFile(string file)
+{
+    FILE *fp;
+    char buffer[128];
+    string command = "cmp sender.txt " + file;
+    fp = popen(command.c_str(), "r");
+    if (fp == NULL)
+    {
+        printf("Failed to run cmp command\n");
+        cleanup();
+        exit(1);
+    }
+
+    bool ans = fgets(buffer, sizeof(buffer), fp) == NULL;
+
+    if (pclose(fp) != 0)
+    {
+        printf("Error in closing cmp command\n");
+        cleanup();
+        exit(1);
+    }
+    return ans;
 }
