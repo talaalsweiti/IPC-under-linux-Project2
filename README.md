@@ -10,13 +10,13 @@ This project was developed to explore and demonstrate the practical application 
 ## Key Features
 The project encompasses the following key features:
 
-1- Shared Memory: Shared memory is used as a means of communication and data exchange between different processes. Processes can read from and write to a shared memory segment, enabling efficient and fast communication.
+**1- Shared Memory:** Shared memory is used as a means of communication and data exchange between different processes. Processes can read from and write to a shared memory segment, enabling efficient and fast communication.
 
-2- Semaphores: Semaphores are employed to synchronize access to shared resources. They allow processes to coordinate their actions, ensuring mutually exclusive access to critical sections of code or shared resources.
+**2- Semaphores:** Semaphores are employed to synchronize access to shared resources. They allow processes to coordinate their actions, ensuring mutually exclusive access to critical sections of code or shared resources.
 
-3- Message Queues: Message queues provide a structured way of exchanging messages between processes. Processes can send messages to a queue and other processes can retrieve and process those messages in a predefined order.
+**3- Message Queues:** Message queues provide a structured way of exchanging messages between processes. Processes can send messages to a queue and other processes can retrieve and process those messages in a predefined order.
 
-4- Multi-processing: The project utilizes multiple processes running concurrently to simulate a distributed system. Each process has a specific role and performs a set of tasks as part of the overall communication flow.
+**4- Multi-processing:** The project utilizes multiple processes running concurrently to simulate a distributed system. Each process has a specific role and performs a set of tasks as part of the overall communication flow.
 
  ## How 
  - Clone the repository to your local machine.
@@ -29,7 +29,7 @@ The project encompasses the following key features:
 &emsp; &ensp; 2- Then you can run the program using:
 
  ```
- cd IPC-under-linux-Project2
+ cd IPC-under-linux-Project2/source_code
  make
  ./parent
  ```
@@ -42,7 +42,8 @@ You can customize the following parameters in the source code:
 - Number of spy processes
 - Thresholds for successful and failed decoding operations
 
-Feel free to modify these parameters in **inputVariables.txt** to suit your specific needs.
+Feel free to modify these parameters in **inputVariables.txt** to suit your specific needs.</br>
+(*The maximum vlaue for variables is 40, which is the assumed maximum number of file columns, any greater values will be assumed 40*)
 
 ## Languages And Tools:
 
