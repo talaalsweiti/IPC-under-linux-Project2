@@ -4,11 +4,13 @@ using namespace std;
 int numOfColumns, numOfRows;
 static struct MEMORY *sharedMemory;
 static struct NUM_OF_READERS *readers;
-int shmid, r_shmid, mut_semid, r_semid, w_semid;
+int mid, shmid, r_shmid, mut_semid, r_semid, w_semid;
+MESSAGE msg;
 
 static struct sembuf acquire = {0, -1, SEM_UNDO},
                      release = {0, 1, SEM_UNDO};
 
+void openMessageQueue();
 void openSharedMemory();
 void openSemaphores();
 void decode(string, string[]);
@@ -24,6 +26,7 @@ int main()
         perror("SIGUSR1 handler");
         exit(6);
     }
+    openMessageQueue();
     openSharedMemory();
     openSemaphores();
     srand(getpid());
@@ -92,6 +95,9 @@ int main()
                 strncpy(cols[colNum - 1], sharedMemory->data[col], MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
                 cout << "Message in RECEIVER: " << sharedMemory->data[col] << endl;
+                strcpy(msg.buffer, colNumStr.c_str());
+                msg.msg_to = 1;
+                msgsnd(mid, &msg, strlen(msg.buffer), 0);
             }
         }
 
@@ -207,6 +213,22 @@ void openSemaphores()
             perror("RECEIVER: semget obtaining semaphore");
             exit(2);
         }
+    }
+}
+
+void openMessageQueue()
+{
+    key_t key;
+    if ((key = ftok(".", Q_SEED)) == -1)
+    {
+        perror("Master Spy:: key generation");
+        exit(1);
+    }
+
+    if ((mid = msgget(key, 0)) == -1)
+    {
+        perror("Master Spy:: Queue openning");
+        exit(2);
     }
 }
 

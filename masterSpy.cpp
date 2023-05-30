@@ -67,12 +67,9 @@ int main(int argc, char *argv[])
                 strncpy(cols[colNum - 1], msg.buffer, MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
                 cout << " Message in MASTER SPY: " << msg.buffer << endl;
-                // memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
-                // strcpy(msg.buffer, sharedMemory->data[col]);
-                // // msg.buffer[MAX_STRING_LENGTH - 1] = '\0';
-                // msg.msg_to = ppid;
-                // cout << "SPY MESSAGE: " << msg.buffer << endl;
-                // msgsnd(mid, &msg, strlen(msg.buffer), 0);
+                strcpy(msg.buffer, colNumStr.c_str());
+                msg.msg_to = 2;
+                msgsnd(mid, &msg, strlen(msg.buffer), 0);
             }
         }
     }

@@ -32,7 +32,7 @@ MESSAGE msg;
 struct MEMORY *sharedMemory;
 int shmid, r_shmid, semid[3];
 pid_t *helpers, *spies;
-pid_t sender, reciever, masterSpy;
+pid_t sender, reciever, masterSpy, opengl;
 pid_t pid = getpid();
 
 union semun arg;
@@ -49,11 +49,12 @@ int main(int argc, char *argv[])
     waitpid(sender, &status, 0);
     // TODO: check if correct
     if (status != 0)
-    { 
+    {
         cout << "sender failed" << endl;
         cleanup();
         exit(1);
     }
+    opengl = createProcesses("./opengl");
     getDimensions();
     createReaderSharedVariable();
     createSemaphores();
@@ -66,12 +67,18 @@ int main(int argc, char *argv[])
     {
         helpers[i] = createProcesses("./helper");
     }
-    char arg1[10], arg2[10], arg3[10];
+    char arg1[10], arg2[10], arg3[10]; // TODO
     sprintf(arg1, "%d", NUM_OF_SPIES);
     sprintf(arg2, "%d", numOfColumns);
     sprintf(arg3, "%d", numOfRows);
+    int round = 1;
     while (receiverFailedDecoding < THRESHOLD && receiverSuccessfulDecoding < THRESHOLD)
     {
+        memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+        strcpy(msg.buffer, to_string(round).c_str());
+        msg.msg_to = 3;
+        msgsnd(mid, &msg, strlen(msg.buffer), 0);
+
         cout << "STARTING" << endl;
         reciever = createProcesses("./receiver");
         masterSpy = createProcesses("./masterSpy", arg1, arg2, arg3);
@@ -81,6 +88,7 @@ int main(int argc, char *argv[])
         }
         flg = true;
         sleep(2);
+        round++;
     }
 
     sleep(5);
