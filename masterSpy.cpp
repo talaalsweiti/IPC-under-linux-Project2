@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     spies = new pid_t[NUM_OF_SPIES];
 
     for (int i = 0; i < NUM_OF_SPIES; i++)
-    { 
+    {
         spies[i] = createProcesses("./spy");
     }
 
@@ -67,6 +67,12 @@ int main(int argc, char *argv[])
                 strncpy(cols[colNum - 1], msg.buffer, MAX_STRING_LENGTH - 1);
                 cols[colNum - 1][MAX_STRING_LENGTH - 1] = '\0';
                 cout << " Message in MASTER SPY: " << msg.buffer << endl;
+                // memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
+                // strcpy(msg.buffer, sharedMemory->data[col]);
+                // // msg.buffer[MAX_STRING_LENGTH - 1] = '\0';
+                // msg.msg_to = ppid;
+                // cout << "SPY MESSAGE: " << msg.buffer << endl;
+                // msgsnd(mid, &msg, strlen(msg.buffer), 0);
             }
         }
     }
@@ -102,12 +108,14 @@ void openMessageQueue()
 void decode(string encodedColumn, string decodedRows[])
 {
     stringstream sColumn(encodedColumn);
+    vector<string> words;
     int col;
     if (sColumn.good())
     {
         string substr;
         getline(sColumn, substr, ' ');
         col = stoi(substr);
+        words.push_back(substr);
     }
 
     int row = 0;
@@ -117,34 +125,33 @@ void decode(string encodedColumn, string decodedRows[])
         getline(sColumn, substr, ' ');
 
         string decodedStr = "";
+        int charNum = 0;
         for (unsigned i = 0; i < substr.length(); i++)
         {
+            charNum++;
             char c = substr[i];
             if (isalpha(c))
             {
                 if (isupper(c))
                 {
                     c -= 'A';
-                    c = (c - ((i + 1) * col));
+                    c = (c - ((charNum)*col));
                     if (c < 0)
                     {
                         int temp = ((-1 * c / 26) + 1);
-                        c = temp * 26 + c;
                         c = (temp * 26 + c) % 26;
                     }
-
                     c += 'A';
                 }
                 else
                 {
                     c -= 'a';
-                    c = (c - ((i + 1) * col));
+                    c = (c - ((charNum)*col));
                     if (c < 0)
                     {
-
                         int temp = ((-1 * c / 26) + 1);
                         c = (temp * 26 + c) % 26;
-                    };
+                    }
                     c += 'a';
                 }
                 decodedStr += c;
@@ -210,6 +217,7 @@ void decode(string encodedColumn, string decodedRows[])
         }
         decodedRows[row] += decodedStr;
         row++;
+        words.push_back(decodedStr);
     }
 }
 

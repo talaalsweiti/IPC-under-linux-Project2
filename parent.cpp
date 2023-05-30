@@ -369,7 +369,7 @@ bool isCorrectFile(string file)
 
     bool ans = fgets(buffer, sizeof(buffer), fp) == NULL;
 
-    if (pclose(fp) != 0)
+    if (pclose(fp) == -1)
     {
         printf("Error in closing cmp command\n");
         cleanup();

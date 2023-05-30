@@ -19,7 +19,7 @@ int main()
 {
     cout << "***************IM IN RECEIVER*************" << endl;
 
-    if (sigset(SIGUSR1, finishSignalCatcher) == SIG_ERR) 
+    if (sigset(SIGUSR1, finishSignalCatcher) == SIG_ERR)
     {
         perror("SIGUSR1 handler");
         exit(6);
@@ -77,7 +77,7 @@ int main()
             perror("RECEIVER: semop write sem");
             exit(3);
         }
- 
+
         stringstream sline(sharedMemory->data[col]);
         if (sline.good())
         {
@@ -230,15 +230,17 @@ void decode(string encodedColumn, string decodedRows[])
         getline(sColumn, substr, ' ');
 
         string decodedStr = "";
+        int charNum = 0;
         for (unsigned i = 0; i < substr.length(); i++)
         {
+            charNum++;
             char c = substr[i];
             if (isalpha(c))
             {
                 if (isupper(c))
                 {
                     c -= 'A';
-                    c = (c - ((i + 1) * col));
+                    c = (c - ((charNum)*col));
                     if (c < 0)
                     {
                         int temp = ((-1 * c / 26) + 1);
@@ -249,7 +251,7 @@ void decode(string encodedColumn, string decodedRows[])
                 else
                 {
                     c -= 'a';
-                    c = (c - ((i + 1) * col));
+                    c = (c - ((charNum)*col));
                     if (c < 0)
                     {
                         int temp = ((-1 * c / 26) + 1);
@@ -338,12 +340,11 @@ void writeToFile(char columns[][MAX_STRING_LENGTH])
     for (int i = 0; i < numOfRows; i++)
     {
         receiverFile << decodedRows[i] << "\n";
-        cout << "RECEIVER decoding" << decodedRows[i] << endl;
+        cout << "RECEIVER decoding " << decodedRows[i] << endl;
     }
 
     receiverFile.close();
 }
-
 
 void finishSignalCatcher(int signum)
 {
