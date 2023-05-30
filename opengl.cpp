@@ -267,7 +267,7 @@ void drawSharedMemory(int numberOfColumns)
     for (int j = 0; j <= columns; j++)
     {
         bool bbreak = false;
-        for (int i = 0; i < rows; i++)
+        for (int i = 0; i < rows; i++) 
         {
             switch (sharedInfo[index].second)
             {
@@ -350,6 +350,20 @@ void displayRoundWinner(){
     renderText(ROUND_WINNER.c_str(), 0.0f, -0.55f, 18);
 }
 
+void displayArguments(){
+    /* 
+    NUM_OF_HELPERS 2
+    NUM_OF_SPIES 1
+    THRESHOLD 1
+    */
+   std::string numOfHelpers = "NUM_OF_HELPERS 2";
+   std::string numOfSpies = "NUM_OF_SPIES 1";
+   std::string threshold = "THRESHOLD 1";
+   renderText(numOfHelpers.c_str(), -0.75, 0.83, 16);
+   renderText(numOfSpies.c_str(), -0.75, 0.78, 16);
+   renderText(threshold.c_str(), -0.75, 0.73, 16);
+}
+
 // GLUT display function
 void display()
 {
@@ -386,6 +400,7 @@ void display()
     drawReceiverAndSpyLabels();
     drawScores();
     displayRoundWinner();
+    displayArguments();
     glutSwapBuffers();
 }
 
