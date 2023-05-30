@@ -1,17 +1,19 @@
 #include "local.h"
 using namespace std;
 
-int NUM_OF_SPIES = 4;
-int NUM_OF_HELPERS = 3;
+int NUM_OF_SPIES;
+int NUM_OF_HELPERS;
+int THRESHOLD;
 
-void readFile();
+void readInputVariablesFile();
+void createMessageQueue();
 void sendColumnToChildren();
 void createSharedMemory();
 void createSemaphore(key_t, int);
 void createSemaphores();
 void createReaderSharedVariable();
 void cleanup();
-
+void getNumberOfColumns();
 vector<vector<string>> tokens;
 int numOfColumns = 0, numOfRows;
 key_t key;
@@ -28,135 +30,78 @@ union semun arg;
 
 int main(int argc, char *argv[])
 {
-    readFile();
-    createSharedMemory();
-    sendColumnToChildren();
+    readInputVariablesFile();
+    int status;
+    createMessageQueue();
+    sender = createProcesses("./sender");
+    waitpid(sender, &status, 0);
+    // TODO: check if correct
+    if (status != 0)
+    {
+        cout << "sender failed" << endl;
+        exit(1);
+    }
+    getNumberOfColumns();
     createReaderSharedVariable();
     createSemaphores();
 
     // create helpers, assume 2 helpers
-    helpers = new pid_t[NUM_OF_HELPERS];
-    spies = new pid_t[NUM_OF_SPIES];
+    helpers = new pid_t[NUM_OF_HELPERS]; // TODO: free?
 
     // sleep(2);
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     helpers[i] = createProcesses("./helper");
-    // }
+    for (int i = 0; i < NUM_OF_HELPERS; i++)
+    {
+        helpers[i] = createProcesses("./helper");
+    }
 
-    // for (int i = 0; i < 2; i++)
-    // {
-    //     waitpid(helpers[i], NULL, 0);
-    // }
+    reciever = createProcesses("./receiver");
+
+    // TODO: to reomve
+    waitpid(reciever, &status, 0);
+    if (status != 0)
+    {
+        cout << "recevier failed" << endl;
+        exit(2);
+    }
+    for (int i = 0; i < NUM_OF_HELPERS; i++)
+    {
+        waitpid(helpers[i], NULL, 0);
+    }
 
     sleep(5);
     cleanup();
+    
     return 0;
 }
 
-void readFile()
+void readInputVariablesFile()
 {
-    FILE *fin;
-    string command = "sed -e \"s/\\s\\ */\\ /g; /^$/d\" sender.txt | fmt -s -w 80 sender.txt > /tmp/sender.txt && mv /tmp/sender.txt sender.txt";
-    if ((fin = popen(command.c_str(), "r")) == NULL)
+    ifstream inputVariableFile("inputVariables.txt");
+    if (!inputVariableFile.good())
     {
-        perror("Preproccessing sender.txt");
-        exit(1);
-    }
-    if (pclose(fin) == -1)
-    {
-        perror("pclose");
-        exit(2);
-    }
-
-    ifstream senderFile("sender.txt");
-    if (!senderFile.good())
-    {
-        perror("Open range.txt");
+        perror("Open inputVariables.txt");
         exit(2);
     }
 
     string line;
-    while (getline(senderFile, line))
+    while (getline(inputVariableFile, line))
     {
         stringstream sline(line);
-        vector<string> words;
-        while (sline.good())
-        {
-            string substr;
-            getline(sline, substr, ' ');
-            words.push_back(substr);
+        string variableName;
+        getline(sline, variableName, ' ');
+        string value;
+        getline(sline, value, ' ');
+        if(variableName == "NUM_OF_HELPERS"){
+            NUM_OF_HELPERS = stoi(value);
         }
-        numOfColumns = max(numOfColumns, (int)words.size());
-        tokens.push_back(words);
-    }
-    for (unsigned i = 0; i < tokens.size(); i++)
-    {
-        while ((int)tokens[i].size() < numOfColumns)
-        {
-            tokens[i].push_back("alright");
+        else if(variableName == "NUM_OF_SPIES"){
+            NUM_OF_SPIES = stoi(value);
+        }
+        else if(variableName == "THRESHOLD"){
+            THRESHOLD = stoi(value);
         }
     }
-
-    // numOfRows = tokens.size();
-
-    // vector<vector<string> > columns(tokens[0].size(), vector<string>(tokens.size()));
-    // for (int i = 0; i < tokens[0].size(); i++)
-    //     for (int j = 0; j < data.size(); j++) {
-    //         columns[i][j] = tokens[j][i];
-    //     }
-}
-
-void sendColumnToChildren()
-{
-    if ((key = ftok(".", Q_SEED)) == -1)
-    {
-        perror("Parent: key generation");
-        cleanup();
-        exit(3);
-    }
-
-    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // TODO: check for IPC_CREAT flag *********
-    {
-        perror("Queue creation");
-        cleanup();
-        exit(4);
-    }
-
-    // char *colNumStr = NULL;
-
-    for (int i = 0; i < numOfColumns; i++)
-    {
-        // sprintf(colNumStr, "%d", i);
-        pid_t pid = createProcesses("./child");
-        if (pid == -1)
-        {
-            exit(1);
-        }
-        msg.msg_to = pid;
-        string column = to_string(i + 1); // one indexed column number
-
-        unsigned j;
-        for (j = 0; j < tokens.size(); j++)
-        {
-            column += " " + tokens[j][i];
-        }
-
-        strcpy(msg.buffer, column.c_str());
-        cout << "PARENT: " << msg.buffer << endl;
-
-        msgsnd(mid, &msg, strlen(msg.buffer), 0);
-    }
-
-    // TODO:: this code must be removed, and instead, children should inform the parent when they finish, and then the parent should remove the queue
-    for (int i = 0; i < numOfColumns; i++)
-    {
-        int status;
-        wait(&status);
-    }
-
-    msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
-    // ------------------------------------------------------------------------
+    inputVariableFile.close();
 }
 
 void createSharedMemory()
@@ -184,12 +129,12 @@ void createSharedMemory()
         exit(1);
     }
 
-    sharedMemory->rows = numOfColumns;
+    sharedMemory->numOfColumns = numOfColumns;
 
     shmdt(sharedMemory); // weee
 
     // // just for testing
-    // for (int i = 0; i < sharedMemory->rows; i++)
+    // for (int i = 0; i < sharedMemory->numOfColumns; i++)
     // {
     //     strncpy(sharedMemory->data[i], "Tala", MAX_STRING_LENGTH - 1);
     //     sharedMemory->data[i][MAX_STRING_LENGTH - 1] = '\0';
@@ -284,6 +229,7 @@ void createSemaphores()
 
 void cleanup()
 {
+
     if (shmctl(shmid, IPC_RMID, (struct shmid_ds *)0) == -1)
     {
         perror("shmctl: IPC_RMID"); /* remove semaphore */
@@ -294,6 +240,7 @@ void cleanup()
         perror("shmctl: IPC_RMID"); /* remove semaphore */
         // exit(5);
     }
+    msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
 
     for (int i = 0; i < 3; i++)
     {
@@ -302,5 +249,45 @@ void cleanup()
             perror("semctl: IPC_RMID"); /* remove semaphore */
             // exit(5);
         }
+    }
+}
+
+void getNumberOfColumns()
+{
+    key_t key;
+    if ((key = ftok(".", MEM_SEED)) == -1)
+    {
+        perror("PARENT: shared memory key generation");
+        exit(1);
+    }
+
+    if ((shmid = shmget(key, 0, 0)) == -1) // TODO: remove if already exist??
+    {
+        perror("shmget -- parent -- create");
+        exit(1);
+    }
+
+    // Attach the shared memory segment
+    if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
+    {
+        perror("RECEIVER: shmat");
+        exit(3);
+    }
+    numOfColumns = sharedMemory->numOfColumns;
+    shmdt(sharedMemory);
+}
+
+void createMessageQueue()
+{
+    if ((key = ftok(".", Q_SEED)) == -1)
+    {
+        perror("Parent: key generation");
+        exit(3);
+    }
+
+    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // TODO: check for IPC_CREAT flag *********
+    {
+        perror("Queue creation");
+        exit(4);
     }
 }

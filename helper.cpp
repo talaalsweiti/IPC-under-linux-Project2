@@ -1,7 +1,7 @@
 #include "local.h"
 using namespace std;
 
-void openSharedMemory();
+void createSharedMemory();
 void openSemaphores();
 
 struct MEMORY *sharedMemory;
@@ -15,7 +15,7 @@ int main()
 {
     srand(getpid());
     unsigned col1, col2;
-    openSharedMemory();
+    createSharedMemory();
     openSemaphores();
 
     int i = 10; // TODO: remove
@@ -93,12 +93,17 @@ int main()
             exit(3);
         }
 
-        sleep(rand() % 3); // TODO:: REMOVE?
+        int sleepAmount = rand() % 5;
+        if (sleepAmount == 0)
+        {
+            sleepAmount = 1;
+        }
+        sleep(sleepAmount); // TODO:: REMOVE?
     }
     return 0;
 }
 
-void openSharedMemory()
+void createSharedMemory()
 {
     key_t key = ftok(".", MEM_SEED);
     if (key == -1)
@@ -116,7 +121,7 @@ void openSharedMemory()
     {
         perror("HELPER: shmat");
     }
-    numOfColumns = sharedMemory->rows;
+    numOfColumns = sharedMemory->numOfColumns;
 }
 void openSemaphores()
 {

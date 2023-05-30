@@ -30,7 +30,7 @@
 #define SEM_R_SEED 'e'              /* seed for ftok for readers semaphore */
 #define SEM_W_SEED 'f'              /* seed for ftok for writers semaphore */
 
-// #define NUMBER_OF_COLUMNS 1000
+//TODO: increase ??
 #define MAX_STRING_LENGTH 1024
 
 typedef struct
@@ -49,7 +49,8 @@ union semun
 
 struct MEMORY
 {
-  int rows;
+  int numOfRows;
+  int numOfColumns;
   // int cols;
   char data[][MAX_STRING_LENGTH]; // Flexible array member
 };

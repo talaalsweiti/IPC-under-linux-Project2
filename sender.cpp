@@ -1,32 +1,26 @@
 #include "local.h"
 using namespace std;
 
-int NUM_OF_SPIES = 4;
-int NUM_OF_HELPERS = 3;
-
 void readFile();
 void sendColumnToChildren();
-void openSharedMemory();
+void createSharedMemory();
 
 vector<vector<string>> tokens;
-int numOfColumns = 0, numOfRows;
+int numOfColumns = 0, numOfRows = 0;
+int mid;
 key_t key;
-int mid, n;
 MESSAGE msg;
-
 struct MEMORY *sharedMemory;
-int shmid, r_shmid, semid[3];
-pid_t *helpers, *spies;
-pid_t sender, reciever, spy;
-pid_t pid = getpid();
+int shmid;
 
 union semun arg;
 
 int main(int argc, char *argv[])
 {
     readFile();
-    openSharedMemory();
+    createSharedMemory();
     sendColumnToChildren();
+
     return 0;
 }
 
@@ -48,7 +42,7 @@ void readFile()
     ifstream senderFile("sender.txt");
     if (!senderFile.good())
     {
-        perror("Open range.txt");
+        perror("Open sender.txt");
         exit(2);
     }
 
@@ -73,20 +67,21 @@ void readFile()
             tokens[i].push_back("alright");
         }
     }
+    numOfRows = tokens.size();
 }
 
 void sendColumnToChildren()
 {
     if ((key = ftok(".", Q_SEED)) == -1)
     {
-        perror("Parent: key generation");
-        exit(3);
+        perror("Child: key generation");
+        exit(1);
     }
 
-    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // TODO: check for IPC_CREAT flag *********
+    if ((mid = msgget(key, 0)) == -1)
     {
-        perror("Queue creation");
-        exit(4);
+        perror("Child: Queue openning");
+        exit(2);
     }
 
     // char *colNumStr = NULL;
@@ -97,6 +92,7 @@ void sendColumnToChildren()
         pid_t pid = createProcesses("./child");
         if (pid == -1)
         {
+            cout << "Failed\n";
             exit(1);
         }
         msg.msg_to = pid;
@@ -121,43 +117,46 @@ void sendColumnToChildren()
         wait(&status);
         if (status != 0)
         { // TODO : check & kill ther children
+            cout << "Child Failed\n";
             exit(1);
         }
     }
 
-    msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
+    // msgctl(mid, IPC_RMID, (struct msqid_ds *)0);
     // ------------------------------------------------------------------------
 }
 
-void openSharedMemory()
+void createSharedMemory()
 {
+    size_t size = sizeof(struct MEMORY) + MAX_STRING_LENGTH * numOfColumns * sizeof(char);
     key_t key;
     if ((key = ftok(".", MEM_SEED)) == -1)
     {
-        perror("PARENT: shared memory key generation");
+        perror("SENDER: shared memory key generation");
         exit(1);
     }
 
-    // open shared memory
-    if ((shmid = shmget(key, 0, 0)) == -1) // TODO: remove if already exist??
+    // create shared memory
+    if ((shmid = shmget(key, size, IPC_CREAT | 0666)) == -1) // TODO: remove if already exist??
     {
-        perror("shmget -- parent -- create");
+        perror("shmget -- sender -- create");
         exit(1);
     }
 
     // attach shared memory
     if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
     {
-        perror("shmptr -- parent -- attach");
+        perror("shmptr -- sender -- attach");
         exit(1);
     }
 
-    sharedMemory->rows = numOfColumns;
+    sharedMemory->numOfColumns = numOfColumns;
+    sharedMemory->numOfRows = numOfRows;
 
     shmdt(sharedMemory); // weee
 
     // // just for testing
-    // for (int i = 0; i < sharedMemory->rows; i++)
+    // for (int i = 0; i < sharedMemory->numOfColumns; i++)
     // {
     //     strncpy(sharedMemory->data[i], "Tala", MAX_STRING_LENGTH - 1);
     //     sharedMemory->data[i][MAX_STRING_LENGTH - 1] = '\0';
