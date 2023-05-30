@@ -3,11 +3,11 @@
 using namespace std;
 
 /* Add functions' prototypes */
-void attachToSharedMemory();
+void openSharedMemory();
 void openSemaphores();
 void finishSignalCatcher(int);
 
-/* Define memory pinter and semaphores variables*/
+/* Define memory pointer and semaphores variables*/
 struct MEMORY *sharedMemory;
 int shmid, r_semid, w_semid;
 int numOfColumns;
@@ -30,7 +30,7 @@ int main()
 
     unsigned col1, col2;
 
-    attachToSharedMemory();
+    openSharedMemory();
     openSemaphores();
 
     while (1) /* keep swapping columns continuously until killed by parent */
@@ -40,8 +40,8 @@ int main()
         col2 = rand() % numOfColumns;
 
         /*
-            blocking SIGUSR1 before aquiring the semaphore so 
-            the helper wouldn't get killed while having the semaphore 
+            blocking SIGUSR1 before aquiring the semaphore so
+            the helper wouldn't get killed while having the semaphore
         */
         sigset_t signalSet;
         sigemptyset(&signalSet);
@@ -139,7 +139,7 @@ int main()
 }
 
 /* This function is used to attach the helper to the shared memory and initilize number of columns */
-void attachToSharedMemory()
+void openSharedMemory()
 {
     key_t key = ftok(".", MEM_SEED); /* Get the shared memory key */
     if (key == -1)
@@ -181,7 +181,7 @@ void openSemaphores()
     }
 }
 
-/* This function is called when SIUSR1 is signaled */
+/* This function is called when helper is interrupted with SIGUSR1 */
 void finishSignalCatcher(int signum)
 {
     shmdt(sharedMemory); /* Detach shared memory */

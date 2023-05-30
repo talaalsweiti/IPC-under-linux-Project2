@@ -1,40 +1,44 @@
 #include "local.h"
 
 using namespace std;
-int numOfColumns, numOfRows;
-static struct MEMORY *sharedMemory;
-static struct NUM_OF_READERS *readers;
-int mid, shmid, r_shmid, mut_semid, r_semid, w_semid;
-bool flag = true;
-MESSAGE msg;
 
-static struct sembuf acquire = {0, -1, SEM_UNDO},
-                     release = {0, 1, SEM_UNDO};
-
+/* Add functions' prototypes */
 void openSharedMemory();
 void openSemaphores();
 void openMessageQueue();
 void finishSignalCatcher(int);
 
+int numOfColumns;                      /* Define number of columns to be read from shared memory */
+static struct MEMORY *sharedMemory;    /* define a pointer to the shared memory */
+static struct NUM_OF_READERS *readers; /* Define pointer to the shared memory for the number of readers */
+int mid, shmid, r_shmid, mut_semid, r_semid, w_semid;
+MESSAGE msg; /* define variable to hold the message read from message queue */
+
+/* Define memory pointer and semaphores variables*/
+static struct sembuf acquire = {0, -1, SEM_UNDO},
+                     release = {0, 1, SEM_UNDO};
+
 int main()
 {
     cout << "***************IM IN SPY*************" << endl;
 
-    if (sigset(SIGUSR1, finishSignalCatcher) == SIG_ERR) /* child is interrupted by SIGINT */
+    if (sigset(SIGUSR1, finishSignalCatcher) == SIG_ERR) /* Child is interrupted by master spy to be killed */
     {
         perror("SIGUSR1 handler");
         exit(6);
     }
 
     pid_t ppid = getppid();
-    openMessageQueue();
-    openSharedMemory();
-    openSemaphores();
-    srand(getpid());
+
+    openMessageQueue(); /* Open message queue */
+    openSharedMemory(); /* Open shared memory */
+    openSemaphores(); /* Open a and attach to semaphores */
+
+    srand(getpid());  /* Set helper PID as unique seed for rand */
 
     unsigned col;
     // Access and modify the shared matrix, to get all columns
-    while (flag)
+    while (1)
     {
 
         col = rand() % numOfColumns;
@@ -67,7 +71,7 @@ int main()
         if (readers->readers[col] == 1)
         {
             if (semop(r_semid, &acquire, 1) == -1)
-            { 
+            {
                 perror("SPY: semop read sem");
                 exit(3);
             }
@@ -128,6 +132,7 @@ int main()
     return 0;
 }
 
+/* This function opens the message queue with  */
 void openMessageQueue()
 {
     key_t key;
@@ -144,29 +149,29 @@ void openMessageQueue()
     }
 }
 
+/* This function is used to attach the spy to the shared memory and initilize number of columns */
 void openSharedMemory()
 {
     key_t key = ftok(".", MEM_SEED);
-    if (key == -1)
+    if (key == -1) /* get the key */
     {
         perror("SPY: key generation");
         exit(3);
     }
-    if ((shmid = shmget(key, 0, 0)) == -1)
+    if ((shmid = shmget(key, 0, 0)) == -1) /* get the shared memory */
     {
         perror("SPY: shmid");
         exit(3);
     }
-    // Attach the shared memory segment
-    if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1)
+    if ((sharedMemory = (struct MEMORY *)shmat(shmid, NULL, 0)) == (struct MEMORY *)-1) /* attach the shared memory segment */
     {
         perror("SPY: shmat");
         exit(3);
     }
-    numOfColumns = sharedMemory->numOfColumns;
-    numOfRows = sharedMemory->numOfRows;
+    numOfColumns = sharedMemory->numOfColumns; /* Initilize the number of columns by the value saved in shared memory */
 
-    key = ftok(".", MEM_NUM_OF_READERS_SEED);
+    /* Same process done to open the shared memory for the number of readers*/
+    key = ftok(".", MEM_NUM_OF_READERS_SEED); 
     if (key == -1)
     {
         perror("SPY: key generation");
@@ -177,15 +182,14 @@ void openSharedMemory()
         perror("SPY: shmid");
         exit(3);
     }
-    // Attach the shared memory segment
     if ((readers = (struct NUM_OF_READERS *)shmat(r_shmid, NULL, 0)) == (struct NUM_OF_READERS *)-1)
     {
         perror("SPY: shmat");
         exit(3);
     }
-    // numOfColumns = readers->numOfColumns;
 }
 
+/* This function is used to attach spy to read, write and mutex semaphores */
 void openSemaphores()
 {
     int *semid[] = {&mut_semid, &r_semid, &w_semid};
@@ -207,8 +211,9 @@ void openSemaphores()
     }
 }
 
+/* This function is called when spy is interrupted with SIGUSR1 */
 void finishSignalCatcher(int signum)
 {
-    shmdt(sharedMemory);
+    shmdt(sharedMemory); /* Detach shared memory */
     exit(signum);
 }
