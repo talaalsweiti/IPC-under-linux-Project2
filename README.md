@@ -1,4 +1,4 @@
-# [IPC-under-linux-Project2](https://drive.google.com/file/d/1XCfKgpm_GU-iUFuKZzFUxaupkhjqXoD7/view?usp=sharing)
+# [IPC-under-linux-Project](https://drive.google.com/file/d/1XCfKgpm_GU-iUFuKZzFUxaupkhjqXoD7/view?usp=sharing)
 
 ## Objective
 This project was developed to explore and demonstrate the practical application of interprocess communication techniques under Linux. The objective was to showcase the use of shared memory, semaphores, message queues, and multi-processing to enable efficient and secure communication between multiple processes. By implementing these techniques, the project aimed to provide insights into the benefits and practicality of interprocess communication in various scenarios, such as distributed systems, parallel processing, and resource synchronization.
