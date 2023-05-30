@@ -12,8 +12,8 @@
 
  ## How 
  - Clone the repo in Ubuntu OS
- - Make sure you have the libfreetype6-dev library installed
  - In treminal
+ - Make sure you have the libfreetype6-dev library installed
   ```
  sudo apt update
  sudo apt install libfreetype6-dev
