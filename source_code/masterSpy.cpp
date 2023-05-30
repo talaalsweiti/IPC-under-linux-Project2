@@ -227,7 +227,7 @@ void writeToFile(char columns[][MAX_STRING_LENGTH])
     }
 
     ofstream spyFile;
-    spyFile.open("spy.txt");
+    spyFile.open("../outputs/spy.txt");
 
     for (int i = 0; i < numOfRows; i++)
     {

@@ -46,7 +46,7 @@ void initFreeType()
     FT_Init_FreeType(&ftLibrary); // Initialize FreeType library
 
     // /usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf
-    FT_New_Face(ftLibrary, "./resources/UbuntuMono-R.ttf", 0, &fontFace);
+    FT_New_Face(ftLibrary, "../resources/UbuntuMono-R.ttf", 0, &fontFace);
 
     // Set the font size (in pixels)
     FT_Set_Pixel_Sizes(fontFace, 0, fontSize);

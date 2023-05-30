@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
 void readFile()
 {
     FILE *fin;
-    string command = "sed -e \"s/\\s\\ */\\ /g; /^$/d\" sender.txt | fmt -s -w 80 sender.txt > /tmp/sender.txt && mv /tmp/sender.txt sender.txt";
+    string command = "sed -e \"s/\\s\\ */\\ /g; /^$/d\" ../inputs/sender.txt | fmt -s -w 80 ../inputs/sender.txt > /tmp/sender.txt && mv /tmp/sender.txt ../inputs/sender.txt";
     if ((fin = popen(command.c_str(), "r")) == NULL)
     {
         perror("Preproccessing sender.txt");
@@ -41,7 +41,7 @@ void readFile()
         exit(2);
     }
 
-    ifstream senderFile("sender.txt");
+    ifstream senderFile("../inputs/sender.txt");
     if (!senderFile.good())
     {
         perror("Open sender.txt");
@@ -96,7 +96,7 @@ void sendColumnToChildren()
         {
             cout << "Failed\n";
             exit(1);
-        } 
+        }
         msg.msg_to = pid;
         string column = to_string(i + 1); // one indexed column number
 

@@ -390,7 +390,7 @@ void writeToFile(char columns[][MAX_STRING_LENGTH])
     }
 
     ofstream receiverFile;
-    receiverFile.open("receiver.txt");
+    receiverFile.open("../outputs/receiver.txt");
 
     for (int i = 0; i < numOfRows; i++)
     {

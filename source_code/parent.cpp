@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
 
 void readInputVariablesFile()
 {
-    ifstream inputVariableFile("inputVariables.txt");
+    ifstream inputVariableFile("../inputs/inputVariables.txt");
     if (!inputVariableFile.good())
     {
         perror("Open inputVariables.txt");
@@ -356,7 +356,7 @@ void masterSpySignalCatcher(int signum)
     cout << "Master wins, kill reciever" << endl;
     // bool flgg = isCorrectFile("spy.txt");
     // cout << flgg << endl;
-    if (isCorrectFile("spy.txt"))
+    if (isCorrectFile("../outputs/spy.txt"))
     {
         receiverFailedDecoding++;
         memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
@@ -374,7 +374,7 @@ void receiverSignalCatcher(int signum)
     cout << "Receiver wins, kill master" << endl;
     // bool flgg = isCorrectFile("receiver.txt");
     // cout << flgg << endl;
-    if (isCorrectFile("receiver.txt"))
+    if (isCorrectFile("../outputs/receiver.txt"))
     {
         receiverSuccessfulDecoding++;
         memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
@@ -395,7 +395,7 @@ bool isCorrectFile(string file)
 {
     FILE *fp;
     char buffer[128];
-    string command = "cmp sender.txt " + file;
+    string command = "cmp ../inputs/sender.txt " + file;
     fp = popen(command.c_str(), "r");
     if (fp == NULL)
     {

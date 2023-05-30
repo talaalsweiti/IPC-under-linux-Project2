@@ -3,7 +3,7 @@ CFLAGS = -Wall # specify the options added on compile.
 # -Wall -> allow all warnings
 
 
-all: opengl parent child helper sender receiver masterSpy spy #readerTest  
+all: opengl parent child helper sender receiver masterSpy spy 
 
 # compile parent.cpp
 parent: parent.cpp
@@ -38,4 +38,4 @@ readerTest: readerTest.cpp
 	$(CC) $(CFLAGS) readerTest.cpp -o readerTest
 
 opengl: opengl.cpp 
-	g++ opengl.cpp -o opengl -lglut -lGLU -lGL -lfreetype -I./resources/freetype2 -I./resources/libpng16
+	g++ opengl.cpp -o opengl -lglut -lGLU -lGL -lfreetype -I../resources/freetype2 -I../resources/libpng16
