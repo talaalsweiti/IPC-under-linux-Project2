@@ -51,7 +51,7 @@ void readMessage()
         perror("Child: reading msg from queue");
         exit(3);
     }
-}
+} 
 
 // return space delimited encoded column
 string encode()

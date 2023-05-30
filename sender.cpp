@@ -96,7 +96,7 @@ void sendColumnToChildren()
         {
             cout << "Failed\n";
             exit(1);
-        }
+        } 
         msg.msg_to = pid;
         string column = to_string(i + 1); // one indexed column number
 

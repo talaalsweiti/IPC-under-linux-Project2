@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     waitpid(sender, &status, 0);
     // TODO: check if correct
     if (status != 0)
-    {
+    { 
         cout << "sender failed" << endl;
         cleanup();
         exit(1);

@@ -41,7 +41,7 @@ void initFreeType()
     // Set the font size (in pixels)
     FT_Set_Pixel_Sizes(fontFace, 0, fontSize);
 }
-
+ 
 void findClosestNumbers(int n, int &num1, int &num2)
 {
     int sqrtN = static_cast<int>(std::sqrt(n));

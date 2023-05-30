@@ -37,5 +37,5 @@ receiver: receiver.cpp
 readerTest: readerTest.cpp
 	$(CC) $(CFLAGS) readerTest.cpp -o readerTest
 
-opengl: opengl.cpp
+opengl: opengl.cpp 
 	g++ opengl.cpp -o opengl -lglut -lGLU -lGL -lfreetype -I./resources/freetype2 -I./resources/libpng16

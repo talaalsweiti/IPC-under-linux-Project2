@@ -77,7 +77,7 @@ int main()
             perror("RECEIVER: semop write sem");
             exit(3);
         }
-
+ 
         stringstream sline(sharedMemory->data[col]);
         if (sline.good())
         {

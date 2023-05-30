@@ -81,6 +81,6 @@ pid_t createProcesses(char *file, char *numOfSpies = NULL, char *numOfColumns = 
   default:      /* In the parent */
     return pid; /* save the PID of the child */
   }
-}
+} 
 
 #endif

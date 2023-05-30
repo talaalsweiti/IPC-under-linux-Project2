@@ -19,7 +19,7 @@ int main()
     {
         perror("SIGUSR1 handler");
         exit(6);
-    }
+    } 
     srand(getpid());
     unsigned col1, col2;
     createSharedMemory();

@@ -67,7 +67,7 @@ int main()
         if (readers->readers[col] == 1)
         {
             if (semop(r_semid, &acquire, 1) == -1)
-            {
+            { 
                 perror("SPY: semop read sem");
                 exit(3);
             }

@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
     spies = new pid_t[NUM_OF_SPIES];
 
     for (int i = 0; i < NUM_OF_SPIES; i++)
-    {
+    { 
         spies[i] = createProcesses("./spy");
     }
 
