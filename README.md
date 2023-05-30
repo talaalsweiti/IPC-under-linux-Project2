@@ -12,14 +12,14 @@
 
  ## How 
  - Clone the repo in Ubuntu OS
- - In treminal
- - Make sure you have the libfreetype6-dev library installed
+ - In treminal:  </br>
+1- Make sure you have the libfreetype6-dev library installed   </br>
   ```
  sudo apt update
  sudo apt install libfreetype6-dev
  ```
- Then you can run the program using:
- 
+&emsp; &ensp; 2- Then you can run the program using:
+
  ```
  cd IPC-under-linux-Project2
  make
