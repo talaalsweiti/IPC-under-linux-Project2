@@ -9,7 +9,7 @@ void readMessage();
 string encode();
 void writeColToSharedMem(string);
 
-/* define variables */
+/* define needed variables */
 pid_t cPid;
 key_t key;
 int mid, n;
@@ -49,7 +49,7 @@ void readMessage()
         perror("Child: reading msg from queue");
         exit(3);
     }
-} 
+}
 
 /* This function extract the column from the message and encodes it */
 string encode()
@@ -80,7 +80,7 @@ string encode()
                 if (isupper(c))
                 {
                     c -= 'A';
-                    c = (c + ((i + 1) * col)) % 26; 
+                    c = (c + ((i + 1) * col)) % 26;
                     c += 'A';
                 }
                 else

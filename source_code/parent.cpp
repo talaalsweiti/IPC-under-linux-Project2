@@ -273,10 +273,10 @@ void createSemaphore(key_t key, int i)
     }
 }
 
-/* TODO-Shahd
+/*
     This function calls for creating 3 semaphores.
-    Mutex semaphore -> manage accessing the number of reader
-    Read semaphore -> manage accessing shared memory for reading
+    Mutex semaphore -> manage accessing the number of reader, allowing multiple readers but excluding writers
+    Read semaphore -> manage accessing critical sections where shared data is modified
     Write semaphore -> manage accessing shared memory for writing
 */
 void createSemaphores()
@@ -369,7 +369,7 @@ void receiverSignalCatcher(int signum)
         msgsnd(mid, &msg, strlen(msg.buffer), 0);
     }
     kill(masterSpy, SIGUSR2); /* signal to master spy to stop */
-    neitherFinished = false; /* set flag that wakes the parent */
+    neitherFinished = false;  /* set flag that wakes the parent */
 }
 
 /* This function is called when the program is interrupted with SIGINT */
@@ -385,7 +385,7 @@ bool isCorrectFile(string file)
     FILE *fp;
     char buffer[128];
     string command = "cmp ../inputs/sender.txt " + file; /* command to compare both files */
-    fp = popen(command.c_str(), "r"); /* execute command */
+    fp = popen(command.c_str(), "r");                    /* execute command */
     if (fp == NULL)
     {
         printf("Failed to run cmp command\n");
@@ -402,7 +402,7 @@ bool isCorrectFile(string file)
         cleanup();
         exit(1);
     }
-    
+
     return ans;
 }
 
@@ -431,7 +431,7 @@ void cleanup()
     msgctl(mid, IPC_RMID, (struct msqid_ds *)0); /* delete message queue */
 
     /* delete semaphores */
-    for (int i = 0; i < 3; i++) 
+    for (int i = 0; i < 3; i++)
     {
         if (semctl(semid[i], 0, IPC_RMID, 0) == -1)
         {
