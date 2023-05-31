@@ -17,8 +17,6 @@ bool neitherFinished = true;
 /* Add functions' prototypes */
 void readInputVariablesFile();
 void createMessageQueue();
-void sendColumnToChildren();
-void createSharedMemory();
 void createSemaphore(key_t, int);
 void createSemaphores();
 void createReaderSharedVariable();
@@ -165,21 +163,25 @@ void readInputVariablesFile()
         getline(sline, value, ' ');
 
         /* remove negative value */
-        if(value[0] == '-'){
-            value = value.substr(1,value.size());
+        if (value[0] == '-')
+        {
+            value = value.substr(1, value.size());
         }
         /* skip if not all digits */
         bool skip = false;
-        for(unsigned i=0; i<value.size(); i++){
-            if(!isdigit(value[i])){
+        for (unsigned i = 0; i < value.size(); i++)
+        {
+            if (!isdigit(value[i]))
+            {
                 skip = true;
                 break;
             }
         }
-        if(skip){
+        if (skip)
+        {
             continue;
         }
-        cout<<value<<endl;
+        cout << value << endl;
         if (variableName == "NUM_OF_HELPERS")
         {
             NUM_OF_HELPERS = min(stoi(value), 40);
