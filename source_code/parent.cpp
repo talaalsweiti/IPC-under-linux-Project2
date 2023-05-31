@@ -8,9 +8,9 @@
 using namespace std;
 
 /* Define the variables to be read from inputVariables.txt */
-int NUM_OF_SPIES;
-int NUM_OF_HELPERS;
-int THRESHOLD;
+int NUM_OF_SPIES = 3;
+int NUM_OF_HELPERS = 2;
+int THRESHOLD = 3;
 
 bool neitherFinished = true;
 
@@ -163,6 +163,23 @@ void readInputVariablesFile()
         getline(sline, variableName, ' ');
         string value;
         getline(sline, value, ' ');
+
+        /* remove negative value */
+        if(value[0] == '-'){
+            value = value.substr(1,value.size());
+        }
+        /* skip if not all digits */
+        bool skip = false;
+        for(unsigned i=0; i<value.size(); i++){
+            if(!isdigit(value[i])){
+                skip = true;
+                break;
+            }
+        }
+        if(skip){
+            continue;
+        }
+        cout<<value<<endl;
         if (variableName == "NUM_OF_HELPERS")
         {
             NUM_OF_HELPERS = min(stoi(value), 40);
