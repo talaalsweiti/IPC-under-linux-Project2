@@ -28,10 +28,12 @@ int SPY_COLUMNS = 0;
 char RECEIVER_SCORE[STRING_SIZE] = "0";
 char SPY_SCORE[STRING_SIZE] = "0";
 int numberOfColumns = 20;
+char WINNER_HEADER[STRING_SIZE] = "Round Winner";
 char ROUND_WINNER[STRING_SIZE] = "";
 char numOfHelpers[32] = "NUM_OF_HELPERS ";
 char numOfSpies[32] = "NUM_OF_SPIES ";
 char threshold[32] = "THRESHOLD ";
+int thresh = 0;
 
 FT_Library ftLibrary; // FreeType library context
 
@@ -109,7 +111,7 @@ void renderText(const char *text, float x, float y, int size)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
     for (c = text; *c; ++c)
     {
@@ -341,7 +343,7 @@ void displayRoundWinner()
     drawRectangle(0.0f, -0.5, 0.4f, 0.2f, false);
     applyColor(0, 0, 0);
 
-    renderText("Round Winner", 0.0f, -0.48f, 18);
+    renderText(WINNER_HEADER, 0.0f, -0.48f, 18);
     renderText(ROUND_WINNER, 0.0f, -0.55f, 18);
 }
 
@@ -509,6 +511,11 @@ int updateScore()
     else
     {
         strcpy(RECEIVER_SCORE, msg.buffer);
+        if (atoi(RECEIVER_SCORE) >= thresh)
+        {
+            strcpy(WINNER_HEADER, "Overall Winner");
+        }
+
         strcpy(ROUND_WINNER, "Reciever");
         return 0;
     }
@@ -524,6 +531,11 @@ int updateScore()
     else
     {
         strcpy(SPY_SCORE, msg.buffer);
+        if (atoi(SPY_SCORE) >= thresh)
+        {
+            strcpy(WINNER_HEADER, "Overall Winner");
+        }
+
         strcpy(ROUND_WINNER, "Master Spy");
         return 0;
     }
@@ -562,6 +574,7 @@ void getDefinedVariables()
     else
     {
         strcat(threshold, msg.buffer);
+        thresh = atoi(threshold + 10);
     }
 }
 
