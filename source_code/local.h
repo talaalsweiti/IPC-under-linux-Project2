@@ -30,13 +30,11 @@
 #define SEM_R_SEED 'e'              /* seed for ftok for readers semaphore */
 #define SEM_W_SEED 'f'              /* seed for ftok for writers semaphore */
 
-// TODO: increase ??
 #define MAX_STRING_LENGTH 1024
 
 typedef struct
 {
   long msg_to; /* Placed in the queue for */
-               //   long      msg_fm;		/* Placed in the queue by  */
   char buffer[BUFSIZ];
 } MESSAGE;
 
@@ -51,7 +49,6 @@ struct MEMORY
 {
   int numOfRows;
   int numOfColumns;
-  // int cols;
   char data[][MAX_STRING_LENGTH]; // Flexible array member
 };
 
@@ -63,6 +60,7 @@ struct NUM_OF_READERS
   unsigned readers[]; // Flexible array member
 };
 
+/* Fork a child and and exec with the passed file */
 pid_t createProcesses(char *file, char *numOfSpies = NULL, char *numOfColumns = NULL, char *numOfRows = NULL)
 {
   pid_t pid = fork(); /* fork an opengl child process */
