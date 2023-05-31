@@ -39,26 +39,20 @@ FT_Face fontFace; // Font face
 
 void openSharedMemory();
 
-// Function to initialize FreeType
+// This function is used to initialize FreeType
 void initFreeType()
 {
-    // Initialize FreeType library
     FT_Init_FreeType(&ftLibrary); // Initialize FreeType library
-
-    // /usr/share/fonts/truetype/ubuntu/UbuntuMono-R.ttf
     FT_New_Face(ftLibrary, "../resources/UbuntuMono-R.ttf", 0, &fontFace);
-
-    // Set the font size (in pixels)
     FT_Set_Pixel_Sizes(fontFace, 0, fontSize);
 }
 
+/* This function takes an integer n and return two numbers with min difference where num1*num2 = n */
 void findClosestNumbers(int n, int &num1, int &num2)
 {
     int sqrtN = static_cast<int>(std::sqrt(n));
     num1 = sqrtN;
     num2 = sqrtN;
-
-    // Iterate downwards to find the closest pair
     while (num1 >= 1)
     {
         if (n % num1 == 0)
@@ -68,8 +62,6 @@ void findClosestNumbers(int n, int &num1, int &num2)
         }
         num1--;
     }
-
-    // Iterate upwards to find the closest pair
     while (num2 <= n)
     {
         if (n % num2 == 0)
@@ -79,20 +71,18 @@ void findClosestNumbers(int n, int &num1, int &num2)
         }
         num2++;
     }
-
     if (num1 == 1 || num2 == 1)
     {
         findClosestNumbers(n - 1, num1, num2);
     }
 }
 
-// Function to render text
+// This function is used to render text
 void renderText(const char *text, float x, float y, int size)
 {
     x = (x + 1) * WIN_WIDTH / 2;
     y = (y + 1) * WIN_HEIGHT / 2;
     float sizeF = (float)size * std::min(WIN_WIDTH, WIN_HEIGHT) / 600;
-    // fontSize = int(sizeF);
     FT_Set_Pixel_Sizes(fontFace, 0, int(sizeF));
 
     glMatrixMode(GL_PROJECTION);
@@ -116,26 +106,23 @@ void renderText(const char *text, float x, float y, int size)
 
     glTranslatef(startX, y, 0); // Set the position of the text
 
-    // Enable blending for transparency
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // Set font rendering parameters
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); 
 
-    // Iterate over the characters in the text
     for (c = text; *c; ++c)
     {
-        // Load the glyph for the current character
         if (FT_Load_Char(fontFace, *c, FT_LOAD_RENDER))
             continue;
 
-        FT_Bitmap *bitmap = &(fontFace->glyph->bitmap); // Access the glyph's bitmap
+        FT_Bitmap *bitmap = &(fontFace->glyph->bitmap);
 
-        for (int row = 0; row < bitmap->rows / 2; ++row)
+        for (unsigned row = 0; row < bitmap->rows / 2; ++row)
         {
             unsigned char *topRow = bitmap->buffer + row * bitmap->width;
             unsigned char *bottomRow = bitmap->buffer + (bitmap->rows - row - 1) * bitmap->width;
-            for (int col = 0; col < bitmap->width; ++col)
+            for (unsigned col = 0; col < bitmap->width; ++col)
             {
                 unsigned char temp = topRow[col];
                 topRow[col] = bottomRow[col];
@@ -143,20 +130,17 @@ void renderText(const char *text, float x, float y, int size)
             }
         }
         fontFace->glyph->bitmap_top = bitmap->rows - fontFace->glyph->bitmap_top;
-
-        // Render the glyph using OpenGL
         glRasterPos2f(fontFace->glyph->bitmap_left, -fontFace->glyph->bitmap_top);
         glDrawPixels(bitmap->width, bitmap->rows, GL_ALPHA, GL_UNSIGNED_BYTE, bitmap->buffer);
 
         glTranslatef((fontFace->glyph->advance.x >> 6) + 0 * fontSize, 0, 0); // Move the pen position
     }
-
     glPopMatrix();
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
 }
 
-// A function that draws a circule given its radius, and center x and y coordinates
+// This function draws a circule given its radius, and center x and y coordinates
 void drawCircle(float r, float x, float y)
 {
 
@@ -181,7 +165,7 @@ void drawCircle(float r, float x, float y)
     glEnd();
 }
 
-/* draw a rectangle of color(r,g,b) with point coordinates passed */
+/* This function draws a rectangle with center point, length, and options passed */
 void drawRectangle(float x, float y, float xLength, float yLength, bool drawBorder, bool clearColor = false)
 {
     if (clearColor)
@@ -192,17 +176,10 @@ void drawRectangle(float x, float y, float xLength, float yLength, bool drawBord
         glColor4f(0.0f, 0.0f, 0.0f, 0.0f); // Set clear color (transparent)
     }
     glBegin(GL_QUADS); // draw a quad
-
-    /*
-     *x1,y2           *x2,y2
-     *x,y
-     *x1,y1           *x2,y1
-     */
     float x1 = x - (0.5 * xLength);
     float x2 = x + (0.5 * xLength);
     float y1 = y - (0.5 * yLength);
     float y2 = y + (0.5 * yLength);
-    // std::cout<<x1<<"\t"<<x2<<"\t"<<y1<<"\t"<<y2<<"\n";
     glVertex2f(x1, y1); // bottom left corner
     glVertex2f(x2, y1); // bottom right corner
     glVertex2f(x2, y2); // top right corner
@@ -225,17 +202,19 @@ void drawRectangle(float x, float y, float xLength, float yLength, bool drawBord
     }
 }
 
+/* this function takes a normal RGB values and returns a value suitable for glut */
 GLfloat convertColor(int value)
 {
     return static_cast<GLfloat>(value) / 255.0f;
 }
 
+/* change normal RGB to GLUT RGB */
 void applyColor(int r, int g, int b)
 {
     glColor3f(static_cast<GLfloat>(r) / 255.0f, static_cast<GLfloat>(g) / 255.0f, static_cast<GLfloat>(b) / 255.0f);
 }
 
-/* display the round # at the top of the window */
+/* This function displays the round # at the top of the window */
 void drawRound()
 {
     applyColor(210, 210, 210);
@@ -243,11 +222,9 @@ void drawRound()
     renderText(ROUND, 0.0f, 0.8f, 24);
 }
 
+/* This function draws the shared memory */
 void drawSharedMemory()
 {
-    // numberOfColumns = 20;
-    // sharedMemoryInfo = {{6, 0}, {1, 1}, {2, 2}, {4, 3}, {5, 2}, {7, 0}, {10, 0}, {9, 1}, {8, 3}, {3, 2}, {6, 0}, {1, 1}, {2, 2}, {4, 3}, {5, 2}, {7, 0}, {10, 0}, {9, 1}, {8, 3}, {3, 2}};
-
     int rows, columns;
     findClosestNumbers(numberOfColumns, rows, columns);
     if (rows > columns)
@@ -273,7 +250,6 @@ void drawSharedMemory()
         starty = (columns / 2) * length;
     }
 
-    // Draw Shared Memory Label
     renderText("Shared Memory", 0, starty + length, 18);
 
     int cnt = 1;
@@ -428,8 +404,6 @@ int getColumnsInfo()
         {
             if (errno != ENOMSG)
             {
-                // perror("OPENGL:: msgrcv");
-                // exit(1);
                 return -1;
             }
             else
@@ -439,8 +413,6 @@ int getColumnsInfo()
         }
         else
         {
-            // Message received, process it
-
             RECEIVER_COLUMNS++;
             int colNumber = atoi(msg.buffer);
             if (obtaindColumns[colNumber - 1] == 'n')
@@ -451,7 +423,6 @@ int getColumnsInfo()
             {
                 obtaindColumns[colNumber - 1] = 'b';
             }
-            // strcpy(RECEIVER_COLUMNS, msg.buffer);
         }
     }
     while (1)
@@ -461,8 +432,6 @@ int getColumnsInfo()
         {
             if (errno != ENOMSG)
             {
-                // perror("OPENGL:: msgrcv");
-                // exit(1);
                 return -1;
             }
             else
@@ -503,8 +472,6 @@ int updateRound()
     {
         if (errno != ENOMSG)
         {
-            // perror("OPENGL:: msgrcv");
-            // exit(1);
             return -1;
         }
     }
@@ -536,8 +503,6 @@ int updateScore()
     {
         if (errno != ENOMSG)
         {
-            // perror("OPENGL:: msgrcv");
-            // exit(1);
             return -1;
         }
     }
@@ -606,7 +571,6 @@ void update(int value)
     {
         return;
     }
-    // getNumOfColumns();
     if (getColumnsInfo() == -1)
     {
         return;
@@ -631,15 +595,13 @@ int main(int argc, char **argv)
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
     glutInitWindowSize(900, 800);
-    glutCreateWindow("FreeType Text Rendering");
+    glutCreateWindow("Retrieval Decoder Game");
 
     initFreeType();
 
     glutDisplayFunc(display);
     glutReshapeFunc(reshape);
     glutTimerFunc(0, update, 0);
-    // glutTimerFunc(1000, update2, 0);
-
     glutMainLoop();
 
     // Cleanup FreeType resources
@@ -671,7 +633,6 @@ void openSharedMemory()
     numberOfColumns = sharedMemory->numOfColumns;
     sharedMemoryInfo.reserve(sizeof(int) * numberOfColumns);
     obtaindColumns.reserve(sizeof(char) * numberOfColumns);
-    // std::fill(obtaindColumns.begin(), obtaindColumns.end(), 'n');
     for (int i = 0; i < numberOfColumns; i++)
     {
         obtaindColumns[i] = 'n';
