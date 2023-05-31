@@ -33,13 +33,13 @@ int main()
 
     srand(getpid()); /* Set spy PID as unique seed for rand */
 
-    char cols[numOfColumns][MAX_STRING_LENGTH]; // to store the columns
+    char cols[numOfColumns][MAX_STRING_LENGTH]; /* to store the columns */
     bool isExist[numOfColumns] = {false};
 
     unsigned col;
     int cntCols = 0;
 
-    // Access the shared matrix, to get all columns
+    /* Access the shared matrix, to get all columns */
     while (cntCols < numOfColumns)
     {
         col = rand() % numOfColumns; /* Randomly select a column */
@@ -48,10 +48,10 @@ int main()
             blocking SIGUSR1 before aquiring the semaphore so
             the spy wouldn't get killed while having the semaphore
         */
-        sigset_t signalSet;                       // sigset_t is a data structure used to represent a set of signals.
-        sigemptyset(&signalSet);                  // ensures that signalSet is empty before adding any signals
-        sigaddset(&signalSet, SIGUSR1);           // adds the SIGUSR1 signal to the signal set
-        sigprocmask(SIG_BLOCK, &signalSet, NULL); // prevents the SIGUSR1 signal from being delivered to the process
+        sigset_t signalSet;                       /* sigset_t is a data structure used to represent a set of signals */
+        sigemptyset(&signalSet);                  /* ensures that signalSet is empty before adding any signals */
+        sigaddset(&signalSet, SIGUSR1);           /* adds the SIGUSR1 signal to the signal set */
+        sigprocmask(SIG_BLOCK, &signalSet, NULL); /* prevents the SIGUSR1 signal from being delivered to the process */
 
         /* Acquire mutex and write semaphores to increase the number of readers */
         acquire.sem_num = col;
@@ -102,7 +102,7 @@ int main()
             string colNumStr;
             getline(sline, colNumStr, ' ');
             int colNum = stoi(colNumStr);
-            // check if has been processed before
+            /* check if has been processed before */
             if (!isExist[colNum - 1]) /* add column and send info to opengl to show it in UI */
             {
                 cntCols++;

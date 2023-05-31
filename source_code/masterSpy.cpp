@@ -49,10 +49,10 @@ int main(int argc, char *argv[])
 
     int n, cntCols = 0;
 
-    // Access the shared matrix, to get all columns
+    /* Access the shared matrix, to get all columns */
     while (cntCols < numOfColumns)
     {
-        // read message from queue (coming from a spy)
+        /* read message from queue (coming from a spy) */
         memset(msg.buffer, 0x0, BUFSIZ * sizeof(char));
         if ((n = msgrcv(mid, &msg, BUFSIZ, getpid(), 0)) == -1)
         {

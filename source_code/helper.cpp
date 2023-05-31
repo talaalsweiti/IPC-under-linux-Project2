@@ -12,7 +12,7 @@ struct MEMORY *sharedMemory;
 int shmid, r_semid, w_semid;
 int numOfColumns;
 
-// define two struct variables, 'acquire' and 'release', which specify the parameters for acquiring and releasing a semaphore respectively
+/* define two struct variables, 'acquire' and 'release', which specify the parameters for acquiring and releasing a semaphore respectively */
 static struct sembuf acquire = {0, -1, SEM_UNDO},
                      release = {0, 1, SEM_UNDO};
 

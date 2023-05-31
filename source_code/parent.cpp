@@ -95,7 +95,6 @@ int main(int argc, char *argv[])
     createReaderSharedVariable();
     createSemaphores();
 
-    // create helpers, assume 2 helpers
     helpers = new pid_t[NUM_OF_HELPERS];
 
     sleep(2);
@@ -216,7 +215,7 @@ void getDimensions()
 void createReaderSharedVariable()
 {
     /* Initialize size of shared memory*/
-    size_t size = sizeof(struct NUM_OF_READERS) + numOfColumns * sizeof(unsigned); // TODO: max numOfColumns?
+    size_t size = sizeof(struct NUM_OF_READERS) + numOfColumns * sizeof(unsigned);
     key_t key;
     if ((key = ftok(".", MEM_NUM_OF_READERS_SEED)) == -1) /* Generate key */
     {
@@ -225,8 +224,7 @@ void createReaderSharedVariable()
         exit(1);
     }
 
-    // TODO: remove if already exist??
-    if ((r_shmid = shmget(key, size, IPC_CREAT | 0666)) == -1) /* create shared memory */
+    if ((r_shmid = shmget(key, size, IPC_CREAT | IPC_EXCL | 0666)) == -1) /* create shared memory */
     {
         perror("PARENT_R: shmget -- parent -- create");
         cleanup();
@@ -250,15 +248,14 @@ void createReaderSharedVariable()
 /* This function takes a key and creates a sempahore with the given key */
 void createSemaphore(key_t key, int i)
 {
-    // TODO: what if already exist?
-    if ((semid[i] = semget(key, numOfColumns, IPC_CREAT | 0666)) == -1) /* Create semaphore */
+    if ((semid[i] = semget(key, numOfColumns, IPC_CREAT | IPC_EXCL | 0666)) == -1) /* Create semaphore */
     {
         perror("semget -- parent -- create");
         cleanup();
         exit(2);
     }
 
-    ushort start_val[numOfColumns]; // TODO: change
+    ushort start_val[numOfColumns];
     for (int k = 0; k < numOfColumns; k++)
     {
         start_val[k] = 1;
@@ -305,7 +302,7 @@ void createMessageQueue()
         exit(3);
     }
 
-    if ((mid = msgget(key, IPC_CREAT | 0660)) == -1) // TODO: check for IPC_CREAT flag *********
+    if ((mid = msgget(key, IPC_CREAT | IPC_EXCL | 0660)) == -1)
     {
         perror("Queue creation");
         cleanup();

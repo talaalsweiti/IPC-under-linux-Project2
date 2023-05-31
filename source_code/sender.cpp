@@ -100,8 +100,7 @@ void createSharedMemory()
         exit(1);
     }
 
-    // TODO: remove if already exist??
-    if ((shmid = shmget(key, size, IPC_CREAT | 0666)) == -1) /* Create shared memory using key */
+    if ((shmid = shmget(key, size, IPC_CREAT | IPC_EXCL | 0666)) == -1) /* Create shared memory using key */
     {
         perror("shmget -- sender -- create");
         exit(1);
