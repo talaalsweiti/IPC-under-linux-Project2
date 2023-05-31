@@ -146,7 +146,7 @@ void sendColumnToChildren()
             exit(1);
         }
         msg.msg_to = pid;
-        string column = to_string(i + 1); // one indexed column number
+        string column = to_string(i + 1); /* Add column number to column string (1-indexed) */
 
         /* convert column content to a single string */
         for (unsigned j = 0; j < tokens.size(); j++)
