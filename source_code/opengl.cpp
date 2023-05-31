@@ -73,7 +73,7 @@ void findClosestNumbers(int n, int &num1, int &num2)
         }
         num2++;
     }
-    if (num1 == 1 || num2 == 1)
+    if ((num1 == 1 || num2 == 1) && num1 * num2 != 1)
     {
         findClosestNumbers(n - 1, num1, num2);
     }
@@ -340,11 +340,11 @@ void drawScores()
 void displayRoundWinner()
 {
     applyColor(210, 210, 210);
-    drawRectangle(0.0f, -0.5, 0.4f, 0.2f, false);
+    drawRectangle(0.0f, -0.6, 0.4f, 0.2f, false);
     applyColor(0, 0, 0);
 
-    renderText(WINNER_HEADER, 0.0f, -0.48f, 18);
-    renderText(ROUND_WINNER, 0.0f, -0.55f, 18);
+    renderText(WINNER_HEADER, 0.0f, -0.58f, 18);
+    renderText(ROUND_WINNER, 0.0f, -0.65f, 18);
 }
 
 void displayArguments()
@@ -584,11 +584,13 @@ void update(int value)
     {
         return;
     }
+
+    getSharedMemoryStatus();
+
     if (getColumnsInfo() == -1)
     {
         return;
     }
-    getSharedMemoryStatus();
 
     if (updateScore() == -1)
     {
@@ -596,7 +598,7 @@ void update(int value)
     }
 
     glutPostRedisplay();
-    glutTimerFunc(30, update, 0); // 16 milliseconds between updates (approximately 60 FPS)
+    glutTimerFunc(10, update, 0); // 16 milliseconds between updates (approximately 60 FPS)
 }
 
 // GLUT main function

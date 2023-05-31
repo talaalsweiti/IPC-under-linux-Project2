@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
         }
         neitherFinished = true; /* reset flag */
 
-        sleep(3);
+        sleep(5);
 
         round++;
     }
