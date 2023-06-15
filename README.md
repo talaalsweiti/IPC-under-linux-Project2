@@ -20,7 +20,7 @@ The project encompasses the following key features:
 
  ## How 
  - Clone the repository to your local machine.
- - In treminal:  </br>
+ - In terminal:  </br>
 1- Make sure you have the libfreetype6-dev library installed   </br>
   ```
  sudo apt update
